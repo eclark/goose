@@ -6,9 +6,12 @@
 
 .globl entry64
 
-
 entry64:
+
+	callq	main
+
+_entry64_halt:
 	hlt
-	jmp entry64
+	jmp _entry64_halt
 
 

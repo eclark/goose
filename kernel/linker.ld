@@ -17,6 +17,8 @@ SECTIONS
 	{
 		_loadStart = .;
 		entry.o (.text)
+		entry.o (.data)
+
 	}
 
 	. += KERNEL_VMA;

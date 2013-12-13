@@ -1,4 +1,9 @@
 *.dep
 *.sys
+*.sym
 *.o
 *.swp
+kernel/.gdbinit
+kernel/.bochsrc
+kernel/none
+kernel/os.iso

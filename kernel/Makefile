@@ -17,7 +17,7 @@ OBJS += $(patsubst %.c,%.o,$(filter %.c,$(SRC)))
 os.iso: iso/boot/kernel.sys
 	grub-mkrescue -d /usr/lib/grub/i386-pc -o $@ iso
 
-iso/boot/kernel.sys: kernel.sys
+iso/boot/kernel.sys: kernel.sys kernel.sym
 	cp $< $@
 
 kernel.sys: Makefile linker.ld $(OBJS)
@@ -25,7 +25,6 @@ kernel.sys: Makefile linker.ld $(OBJS)
 
 kernel.sym: kernel.sys
 	$(NM) --defined $< | cut -f 1,3 -d ' ' >$@
-
 
 Makefile.dep: $(SRC)
 	$(CC) -MM $(CPPFLAGS) $(SRC) >$@
