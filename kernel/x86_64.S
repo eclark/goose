@@ -1,12 +1,16 @@
 
+#define ASM_FILE 1
+
+#include "x86_64.h"
+
 .globl kernel_pml4, kernel_pdpt, kernel_pd,
 .globl phys_pml4, phys_pdpt, phys_pd
 
 .data
 
-phys_pml4 = kernel_pml4 - 0xffffffff80000000
-phys_pdpt = kernel_pdpt - 0xffffffff80000000
-phys_pd   = kernel_pd   - 0xffffffff80000000
+phys_pml4 = kernel_pml4 - HIGH_HALF 
+phys_pdpt = kernel_pdpt - HIGH_HALF 
+phys_pd   = kernel_pd   - HIGH_HALF 
 
 .section .bss
 

@@ -3,7 +3,6 @@
 #define ASM_FILE 1
 
 #include "x86_64.h"
-#include "interrupt.h"
 #include "multiboot2.h"
 
 .globl entry64
@@ -48,6 +47,15 @@ entry64:
 	jnz 1b
 
 	lidt	idtr
+
+	movq	$HIGH_HALF, %rdi
+	movq	%rdi, %rsi
+
+	addq	$multiboot_info, %rdi
+	addq	$(multiboot_info + 4), %rsi
+
+	movq	(%rdi), %rdi
+	movq	(%rsi), %rsi
 
 	callq	main
 

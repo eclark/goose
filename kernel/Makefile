@@ -31,7 +31,7 @@ Makefile.dep: $(SRC)
 
 .PHONY: clean
 clean:
-	rm -f *.o Makefile.dep kernel.sys
+	rm -f *.o Makefile.dep kernel.sys kernel.sym
 
 ifneq ($(MAKECMDGOALS),dep)
 ifneq ($(MAKECMDGOALS),clean)

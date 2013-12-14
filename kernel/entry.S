@@ -5,7 +5,7 @@
 #include "multiboot2.h"
 #include "x86_64.h"
 
-.globl entry
+.globl entry, multiboot_info
 
 .text
 	.code32
@@ -44,6 +44,9 @@ multiboot_header_end:
 	.align 4
 entry:
 	cli
+
+	movl	%eax, multiboot_info
+	movl	%ebx, multiboot_info + 4
 
 	# set up the early 32-bit gdt and jump to it
 	lgdt	earlygdtr
@@ -95,7 +98,7 @@ _entry3:
 	movw	%ax, %ds
 	movw	%ax, %es
 	movw	%ax, %ss
-	movq	$(KERNEL_ESP + 0xffffffff80000000), %rsp
+	movq	$(KERNEL_ESP + HIGH_HALF), %rsp
 	movq	$0, %rbp
 
 	# move up to high half gdtr
@@ -105,6 +108,10 @@ _entry3:
 	jmp 	entry64
 
 .data
+
+multiboot_info:
+	.long	0
+	.long	0
 
 	.align 8
 earlygdt:
@@ -133,4 +140,4 @@ gdtr64l:
 
 gdtr64h:
 	.word	gdt_end - gdt - 1
-	.quad	gdt + 0xffffffff80000000
+	.quad	gdt + HIGH_HALF 
