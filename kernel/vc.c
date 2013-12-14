@@ -3,7 +3,7 @@
 
 #include "mem.h"
 
-uint16_t *vga = (uint16_t*)0xb8000;
+uint16_t *vga = (uint16_t*)0xffffffff800b8000;
 
 static uint16_t cx, cy;
 static uint16_t cattr = 0x3000;
@@ -45,6 +45,18 @@ puts(const char *str)
 		putc(*str);
 
 		str++;
+	}
+}
+
+void
+puthex(uint64_t num, size_t n)
+{
+	size_t m = 2 * n;
+	char nib;
+	while (m--) {
+		nib = (num >> (4 * m)) & 0xf;
+
+		putc(nib < 10 ? nib + '0' : nib + 'a' - 10);
 	}
 }
 

@@ -5,8 +5,6 @@
 #include "multiboot2.h"
 #include "x86_64.h"
 
-.extern KERNEL_VMA
-
 .globl entry
 
 .text
@@ -57,8 +55,7 @@ _entry2:
 	movw	%ax, %ss
 	movl	$KERNEL_ESP, %esp
 
-	# now we have a minimal protected mode
-
+	# now we have a minimal 32-bit protected mode
 
 	# set up pd, pdpt, pml4 and link them together
 	movl	$0x83, phys_pd
@@ -88,6 +85,8 @@ _entry2:
 	movl	%eax, %cr0
 
 	lgdt	gdtr64l
+
+	# jump to long mode
 	ljmp	$KERNEL_CS, $_entry3
 
 .code64
@@ -97,10 +96,12 @@ _entry3:
 	movw	%ax, %es
 	movw	%ax, %ss
 	movq	$(KERNEL_ESP + 0xffffffff80000000), %rsp
+	movq	$0, %rbp
 
+	# move up to high half gdtr
 	lgdt	gdtr64h
 
-	# now we have long mode
+	# now we have high-half long mode
 	jmp 	entry64
 
 .data
@@ -133,7 +134,3 @@ gdtr64l:
 gdtr64h:
 	.word	gdt_end - gdt - 1
 	.quad	gdt + 0xffffffff80000000
-
-phys_pml4 = kernel_pml4 - 0xffffffff80000000
-phys_pdpt = kernel_pdpt - 0xffffffff80000000
-phys_pd   = kernel_pd   - 0xffffffff80000000
