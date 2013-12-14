@@ -6,7 +6,7 @@ LDFLAGS += -nostdlib -static -z max-page-size=0x1000
 CC=cross-gcc
 NM=cross-nm
 
-CPPFLAGS += -nostdinc -g
+CPPFLAGS += -ffreestanding -g
 
 SRC = $(wildcard *.S) $(wildcard *.c)
 
