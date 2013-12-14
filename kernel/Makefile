@@ -14,10 +14,10 @@ OBJS  = entry.o
 OBJS += $(filter-out entry.o,$(patsubst %.S,%.o,$(filter %.S,$(SRC))))
 OBJS += $(patsubst %.c,%.o,$(filter %.c,$(SRC)))
 
-os.iso: iso/boot/kernel.sys
-	grub-mkrescue -d /usr/lib/grub/i386-pc -o $@ iso
+os.iso: ../iso/boot/kernel.sys
+	grub-mkrescue -d /usr/lib/grub/i386-pc -o $@ ../iso
 
-iso/boot/kernel.sys: kernel.sys kernel.sym
+../iso/boot/kernel.sys: kernel.sys kernel.sym
 	cp $< $@
 
 kernel.sys: Makefile linker.ld $(OBJS)
