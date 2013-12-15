@@ -1,5 +1,5 @@
 
-#include "mem.h"
+#include <mem.h>
 
 void*
 memset_quad(void *s, int64_t c, size_t n)

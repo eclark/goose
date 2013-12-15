@@ -16,8 +16,8 @@ SECTIONS
 	.bootstrap :
 	{
 		_loadStart = .;
-		entry.o (.text)
-		entry.o (.data)
+		system/entry.o (.text)
+		system/entry.o (.data)
 
 	}
 

@@ -1,7 +1,6 @@
 
-#include "vc.h"
-
-#include "mem.h"
+#include <vc.h>
+#include <mem.h>
 
 uint16_t *vga = (uint16_t*)0xffffffff800b8000;
 

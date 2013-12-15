@@ -2,8 +2,8 @@
 
 #define ASM_FILE 1
 
-#include "multiboot2.h"
-#include "x86_64.h"
+#include <multiboot2.h>
+#include <x86_64.h>
 
 .globl entry, multiboot_info
 

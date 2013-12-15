@@ -1,17 +1,18 @@
 # Makefile based on 391 but modified for 64 bit higher-half.
 
 CFLAGS += -std=gnu99 -Wall -m64 -mcmodel=large -ffreestanding -nostdlib -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
-ASFLAGS +=
+CFLAGS += -Iinclude
+ASFLAGS += -Iinclude
 LDFLAGS += -nostdlib -static -z max-page-size=0x1000
 CC=cross-gcc
 NM=cross-nm
 
 CPPFLAGS += -ffreestanding -g
 
-SRC = $(wildcard *.S) $(wildcard *.c)
+SRC = $(wildcard *.S) $(wildcard *.c) $(wildcard **/*.S) $(wildcard **/*.c)
 
-OBJS  = entry.o
-OBJS += $(filter-out entry.o,$(patsubst %.S,%.o,$(filter %.S,$(SRC))))
+OBJS  = system/entry.o
+OBJS += $(filter-out system/entry.o,$(patsubst %.S,%.o,$(filter %.S,$(SRC))))
 OBJS += $(patsubst %.c,%.o,$(filter %.c,$(SRC)))
 
 os.iso: ../iso/boot/kernel.sys
@@ -31,7 +32,7 @@ Makefile.dep: $(SRC)
 
 .PHONY: clean
 clean:
-	rm -f *.o Makefile.dep kernel.sys kernel.sym
+	rm -f *.o */*.o Makefile.dep kernel.sys kernel.sym
 
 ifneq ($(MAKECMDGOALS),dep)
 ifneq ($(MAKECMDGOALS),clean)

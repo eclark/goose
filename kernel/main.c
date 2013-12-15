@@ -1,11 +1,11 @@
 
-#include "types.h"
-#include "x86_64.h"
-#include "multiboot2.h"
-#include "vc.h"
-#include "mem.h"
-#include "interrupt.h"
-#include "ioport.h"
+#include <system.h>
+#include <x86_64.h>
+#include <multiboot2.h>
+#include <vc.h>
+#include <mem.h>
+#include <interrupt.h>
+#include <ioport.h>
 
 void
 main(uint32_t magic, uint32_t addr)
