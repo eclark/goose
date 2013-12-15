@@ -7,33 +7,54 @@
 #include <interrupt.h>
 #include <ioport.h>
 
+struct multiboot_tag_all {
+	union {
+		struct multiboot_tag tag;
+		struct multiboot_tag_string string;
+		struct multiboot_tag_module module;
+		struct multiboot_tag_basic_meminfo basic_meminfo;
+		struct multiboot_tag_bootdev bootdev;
+		struct multiboot_tag_mmap mmap;
+		struct multiboot_tag_vbe vbe;
+		struct multiboot_tag_framebuffer_common framebuffer_common;
+		struct multiboot_tag_framebuffer framebuffer;
+		struct multiboot_tag_elf_sections elf_sections;
+		struct multiboot_tag_apm apm;
+		struct multiboot_tag_efi32 efi32;
+		struct multiboot_tag_efi64 efi64;
+		struct multiboot_tag_smbios smbios;
+		struct multiboot_tag_old_acpi old_acpi;
+		struct multiboot_tag_new_acpi new_acpi;
+		struct multiboot_tag_network network;
+	};
+};
+
+void multiboot_parse(uint32_t addr)
+{
+	struct multiboot_tag_all *tag = (void*)VIRTUAL(addr + 8);
+
+	do {
+		puthex(tag->tag.type, 4);
+		puts("\n");
+
+		tag = (void*)ALIGN((uint64_t)tag + tag->tag.size, MULTIBOOT_TAG_ALIGN);
+	} while (tag->tag.type != 0);
+}
+
 void
 main(uint32_t magic, uint32_t addr)
 {
 	unsigned long long i;
 	clear();
 
-	/*
-	while (1) {
-		puts(" => ");
-		puthex(i, 2);
-		puts(" <=\n");
+	if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+		puts("Multiboot magic number error.");
+		return;
+	}
 
-		i++;
-	}*/
+	multiboot_parse(addr);
 
-	puthex(magic, 4);
-	puts("\n");
-	puthex(addr, 4);
-	puts("\n");
-
-
-	struct multiboot_tag* tag = (void*)(HIGH_HALF + addr + 8);
-
-	puts("\nType: ");
-	puthex(tag->type, 4);
-	puts("\nSize: ");
-	puthex(tag->size, 4);
+	apic_init();
 
 	uint64_t rax, rbx, rcx, rdx;
 	char buf[49];
@@ -46,7 +67,6 @@ main(uint32_t magic, uint32_t addr)
 	*(uint32_t*)&buf[8] = (uint32_t)rcx;
 	buf[12] = 0;
 
-	puts("\n");
 	puts(buf);
 	puts("\n");
 

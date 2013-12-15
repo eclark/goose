@@ -32,7 +32,7 @@ Makefile.dep: $(SRC)
 
 .PHONY: clean
 clean:
-	rm -f *.o */*.o Makefile.dep kernel.sys kernel.sym
+	rm -f *.o */*.o Makefile.dep kernel.sys kernel.sym os.iso
 
 ifneq ($(MAKECMDGOALS),dep)
 ifneq ($(MAKECMDGOALS),clean)

@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+void apic_init(void);
 void enable_irq(int8_t);
 void disable_irq(int8_t);
 
