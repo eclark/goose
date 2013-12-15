@@ -60,6 +60,9 @@ _entry2:
 
 	# now we have a minimal 32-bit protected mode
 
+	# see if this cpu even support x86-64
+	call	_x86_64_check
+
 	# set up pd, pdpt, pml4 and link them together
 	movl	$0x83, phys_pd
 	movl	$(phys_pd + 0x03), phys_pdpt
@@ -92,6 +95,40 @@ _entry2:
 	# jump to long mode
 	ljmp	$KERNEL_CS, $_entry3
 
+# CPU Check, never returns if not 64-bit capable.
+#  Clobber: eax, ebx, ecx, edx
+_x86_64_check:
+	movl	$0x80000001, %eax
+	cpuid
+	testl	$(1<<29), %edx
+	jz  	1f
+
+	ret
+1:
+	cld
+	movw	$0x4700, %ax
+	movl	$2000, %ecx
+	movl	$0xb8000, %edi
+	rep stosw
+
+	movl	$(0xb8000 + 80*10), %edi
+
+	movl	$cpu_warning, %esi
+
+3:
+	movb	(%esi), %ebx
+	movb	%ebx, (%edi)
+
+	incl	%esi
+	addl	$2, %edi
+	cmpb	$0, (%esi)
+	jnz 	3b
+
+2:
+	hlt
+	jmp 	2b
+
+
 .code64
 _entry3:
 	movl	$KERNEL_DS, %eax
@@ -112,6 +149,9 @@ _entry3:
 multiboot_info:
 	.long	0
 	.long	0
+
+cpu_warning:
+	.asciz "Not a 64-bit cpu."
 
 	.align 8
 earlygdt:

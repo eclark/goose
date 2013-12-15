@@ -1,8 +1,7 @@
 #ifndef _VC_H
 #define _VC_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "types.h"
 
 extern uint16_t *vga;
 

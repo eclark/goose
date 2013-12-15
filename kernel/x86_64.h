@@ -8,8 +8,7 @@
 
 #ifndef ASM_FILE
 
-#include <stddef.h>
-#include <stdint.h>
+#include "types.h"
 
 typedef struct {
 	uint64_t rax;
@@ -44,6 +43,19 @@ typedef struct {
 extern page_t kernel_pml4;
 extern page_t kernel_pdpt;
 extern page_t kernel_pd;
+
+void processor_brand(char buf[49]);
+
+static inline void
+cpuid(uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
+{
+	asm volatile(
+		"cpuid"
+		: "=a"(*rax), "=b"(*rbx), "=c"(*rcx), "=d"(*rdx)
+		: "a"(*rax), "b"(*rbx)
+		:
+	);
+}
 
 #endif
 #endif

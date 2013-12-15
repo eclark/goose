@@ -1,12 +1,11 @@
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include "types.h"
 #include "x86_64.h"
 #include "multiboot2.h"
 #include "vc.h"
 #include "mem.h"
 #include "interrupt.h"
+#include "ioport.h"
 
 void
 main(uint32_t magic, uint32_t addr)
@@ -35,12 +34,30 @@ main(uint32_t magic, uint32_t addr)
 	puthex(tag->type, 4);
 	puts("\nSize: ");
 	puthex(tag->size, 4);
+
+	uint64_t rax, rbx, rcx, rdx;
+	char buf[49];
+
+	rax = 0;
+	cpuid(&rax, &rbx, &rcx, &rdx);
+
+	*(uint32_t*)buf = (uint32_t)rbx;
+	*(uint32_t*)&buf[4] = (uint32_t)rdx;
+	*(uint32_t*)&buf[8] = (uint32_t)rcx;
+	buf[12] = 0;
+
+	puts("\n");
+	puts(buf);
+	puts("\n");
+
+	processor_brand(buf);
+	puts(buf);
+
 }
 
 void
 interrupt(regs_t* regs)
 {
-
 	puts("Interrupt Vector: ");
 	puthex(regs->vector, 1);
 	puts("\nException: ");

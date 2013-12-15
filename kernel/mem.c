@@ -24,7 +24,7 @@ memmove_quad(void* dest, const void* src, size_t n)
 		"	leaq -8(%%rsi, %%rcx), %%rsi;"
 		"	leaq -8(%%rdi, %%rcx), %%rdi;"
 		"	std;"
-		"	1:"
+		"1:"
 		"	rep movsq"
 		:
 		: "D"(dest), "S"(src), "c"(n)
