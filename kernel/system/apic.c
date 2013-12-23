@@ -9,9 +9,7 @@
 void
 apic_init(void)
 {
-
 	/* Disable I8259 PICs */
 	outb(I8259_SLAVE_DATA, I8259_DISABLE);
 	outb(I8259_MASTER_DATA, I8259_DISABLE);
-
 }

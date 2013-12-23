@@ -1,7 +1,7 @@
 # Makefile based on 391 but modified for 64 bit higher-half.
 
 CFLAGS += -std=gnu99 -Wall -m64 -mcmodel=large -ffreestanding -nostdlib -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
-CFLAGS += -Iinclude
+CPPFLAGS += -Iinclude
 ASFLAGS += -Iinclude
 LDFLAGS += -nostdlib -static -z max-page-size=0x1000
 CC=cross-gcc
@@ -28,7 +28,7 @@ kernel.sym: kernel.sys
 	$(NM) --defined $< | cut -f 1,3 -d ' ' >$@
 
 Makefile.dep: $(SRC)
-	$(CC) -MM $(CPPFLAGS) $(SRC) >$@
+	$(CC) -M $(CPPFLAGS) $(SRC) >$@
 
 .PHONY: clean
 clean:

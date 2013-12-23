@@ -57,6 +57,14 @@ entry64:
 	movq	(%rdi), %rdi
 	movq	(%rsi), %rsi
 
+# manual stop to work around gdb mode switch issues when remote debugging
+/*
+	movq	$0, %rax
+dloop:
+	pause
+	testq	%rax, %rax
+	jz dloop
+*/
 	callq	main
 
 _entry64_halt:

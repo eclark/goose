@@ -6,8 +6,8 @@
 #define KERNEL_ESP 0x200000
 #define HIGH_HALF 0xffffffff80000000
 
-#define VIRTUAL(addr) (addr + HIGH_HALF)
-#define ALIGN(addr, nbytes) ((addr + nbytes - 1) & ~(nbytes -1))
+#define VIRTUAL(addr) (void*)((uint64_t)addr + HIGH_HALF)
+#define ALIGN(addr, nbytes) (void*)(((uint64_t)addr + nbytes - 1) & ~(nbytes -1))
 
 #ifndef ASM_FILE
 

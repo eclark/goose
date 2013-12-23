@@ -116,8 +116,8 @@ _x86_64_check:
 	movl	$cpu_warning, %esi
 
 3:
-	movb	(%esi), %ebx
-	movb	%ebx, (%edi)
+	movb	(%esi), %bl
+	movb	%bl, (%edi)
 
 	incl	%esi
 	addl	$2, %edi
