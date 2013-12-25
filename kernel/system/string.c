@@ -41,7 +41,7 @@ kprintf(const char *format, ...)
 	const char *pos = format;
 	char buf[65];
 
-	int long_mode, alt_mode;
+	int char_mode, short_mode, long_mode, alt_mode;
 	const char * args;
 	unsigned long arg;
 	
@@ -50,6 +50,8 @@ kprintf(const char *format, ...)
 		switch (*pos) {
 			case '%':
 				alt_mode = 0;
+				char_mode = 0;
+				short_mode = 0;
 				long_mode = 0;
 				next_spec:
 				pos++;
@@ -60,6 +62,9 @@ kprintf(const char *format, ...)
 							args = va_arg(ap, const char *);
 							kconsole->write(kconsole, args, strlen(args));
 							break;
+						case 'c': /* TODO broken */
+							buf[0] = va_arg(ap, int);
+							kconsole->write(kconsole, buf, 1);
 						case 'd':
 							if (long_mode) {
 								arg = va_arg(ap, long);
@@ -82,12 +87,26 @@ kprintf(const char *format, ...)
 							if (!long_mode)
 								args += 8;
 
+							if (short_mode)
+								args += 4;
+
+							if (char_mode)
+								args += 6;
+
 							if (!alt_mode)
 								while (*args == '0' && *(args + 1) != 0)
 									args++;
 
 							kconsole->write(kconsole, args, strlen(args));
 							break;
+						case 'h':
+							if (short_mode) {
+								char_mode = 1;
+								short_mode = 0;
+							} else {
+								short_mode = 1;
+							}
+							goto next_spec;
 						case 'l':
 							long_mode = 1;
 							goto next_spec;

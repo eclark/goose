@@ -34,11 +34,14 @@ processor_brand:
 
 .globl kernel_pml4, kernel_pdpt, kernel_pd,
 .globl phys_pml4, phys_pdpt, phys_pd
-
+.globl boot_pml4
 
 phys_pml4 = kernel_pml4 - HIGH_HALF 
 phys_pdpt = kernel_pdpt - HIGH_HALF 
 phys_pd   = kernel_pd   - HIGH_HALF 
+
+boot_pml4:
+	.quad	phys_pml4
 
 .section .bss
 

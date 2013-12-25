@@ -1,6 +1,8 @@
 
+#include <system.h>
 #include <interrupt.h>
 #include <ioport.h>
+#include <mem.h>
 
 #define I8259_MASTER_DATA 0x21
 #define I8259_SLAVE_DATA 0xa1

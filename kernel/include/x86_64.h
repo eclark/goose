@@ -6,12 +6,12 @@
 #define KERNEL_ESP 0x200000
 #define HIGH_HALF 0xffffffff80000000
 
-#define VIRTUAL(addr) (void*)((uint64_t)addr + HIGH_HALF)
-#define ALIGN(addr, nbytes) (void*)(((uint64_t)addr + nbytes - 1) & ~(nbytes -1))
+#define VIRTUAL(addr) (void*)((uint64_t)(addr) + HIGH_HALF)
+#define ALIGN(addr, nbytes) (void*)(((uint64_t)(addr) + (nbytes) - 1) & ~((nbytes) -1))
 
 #ifndef ASM_FILE
 
-#include "types.h"
+#include <types.h>
 
 typedef struct {
 	uint64_t rax;
@@ -39,23 +39,21 @@ typedef struct {
 	uint64_t ss;
 } __attribute__((packed)) regs_t;
 
-typedef struct {
-	uint64_t entry[512];
-} page_t;
+typedef struct rsdp_struct rsdp_t;
 
-extern page_t kernel_pml4;
-extern page_t kernel_pdpt;
-extern page_t kernel_pd;
+extern uint64_t boot_pml4;
+extern rsdp_t *rsdp;
 
 void processor_brand(char buf[49]);
+int acpi_init(void);
 
 static inline void
-cpuid(uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
+cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
 {
 	asm volatile(
 		"cpuid"
-		: "=a"(*rax), "=b"(*rbx), "=c"(*rcx), "=d"(*rdx)
-		: "a"(*rax), "b"(*rbx)
+		: "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+		: "a"(*eax), "b"(*ebx)
 		:
 	);
 }

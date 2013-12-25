@@ -1,6 +1,7 @@
 
 #include <x86_64.h>
 #include <system.h>
+#include <mem.h>
 #include <multiboot2.h>
 
 struct multiboot_tag_all {
@@ -75,7 +76,7 @@ multiboot_init(uint32_t magic, uint32_t addr)
 			case MULTIBOOT_TAG_TYPE_MMAP:
 				kprintf( "%x %x\n", tag->mmap.entry_size, tag->mmap.entry_version);
 
-				for (i=0; i < (tag->mmap.size - 8) / tag->mmap.entry_size; i++) {
+				for (i = 0; i < (tag->mmap.size - 8) / tag->mmap.entry_size; i++) {
 					kprintf("         %#lx %#lx %x\n", tag->mmap.entries[i].addr, tag->mmap.entries[i].len, tag->mmap.entries[i].type);
 				}
 
@@ -87,7 +88,13 @@ multiboot_init(uint32_t magic, uint32_t addr)
 			case MULTIBOOT_TAG_TYPE_EFI32:
 			case MULTIBOOT_TAG_TYPE_EFI64:
 			case MULTIBOOT_TAG_TYPE_SMBIOS:
+				kprintf("\n");
+				break;
 			case MULTIBOOT_TAG_TYPE_ACPI_OLD:
+				for (i = 0; i < tag->old_acpi.size - 8; i++) {
+					kprintf("%#hhx ", tag->old_acpi.rsdp[i]);
+				}
+				rsdp = (rsdp_t*)tag->old_acpi.rsdp;
 			case MULTIBOOT_TAG_TYPE_ACPI_NEW:
 			case MULTIBOOT_TAG_TYPE_NETWORK:
 				kprintf("\n");
