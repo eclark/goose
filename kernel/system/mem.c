@@ -46,10 +46,17 @@ typedef struct page_struct {
 } page_t;
 
 static uint64_t lookup_phys(void *object);
-static page_t *page_alloc(void);
-static void page_free(page_t *p);
+static page_t *page_table_alloc(void);
+static void page_table_free(page_t *p);
 
-static page_t pool[512] __attribute__((aligned(4096)));
+static int next_free();
+#define POOL_SIZE 512
+#define POOLMAP_SIZE (POOL_SIZE / (sizeof(unsigned long) * 8))
+#define MARK_FREE(n) (poolmap[(n) >> 3] |= 1 << ((n) & 0x7))
+#define MARK_USED(n) (poolmap[(n) >> 3] &= ~(1 << ((n) & 0x7)))
+
+static unsigned long poolmap[POOLMAP_SIZE];
+static page_t pool[POOL_SIZE] __attribute__((aligned(4096)));
 
 void *
 map_page(unsigned long phys, page_size_t ps)
@@ -66,7 +73,7 @@ map_page(unsigned long phys, page_size_t ps)
 	pml4e = pml4->entry + PML4_IDX(virt);
 
 	if (!pml4e->p) {
-		pdpt = page_alloc();
+		pdpt = page_table_alloc();
 		pml4e->v = PHYSICAL(pdpt) & MASK_ADDR;
 		pml4e->p = 1;
 		pml4e->rw = 1;
@@ -88,7 +95,7 @@ map_page(unsigned long phys, page_size_t ps)
 	}
 
 	if (!pdpte->p) {
-		pd = page_alloc();
+		pd = page_table_alloc();
 		pdpte->v = PHYSICAL(pd) & MASK_ADDR;
 		pdpte->p = 1;
 		pdpte->rw = 1;
@@ -112,7 +119,7 @@ map_page(unsigned long phys, page_size_t ps)
 	}
 
 	if (!pde->p) {
-		pt = page_alloc();
+		pt = page_table_alloc();
 		pde->v = PHYSICAL(pt) & MASK_ADDR;
 		pde->p = 1;
 		pde->rw = 1;
@@ -143,20 +150,40 @@ end:
 }
 
 static page_t *
-page_alloc(void)
+page_table_alloc(void)
 {
-	static int nextfree = 0;
+	int n = next_free();
 
-	/* TODO write allocation using bitmap */
-	nextfree++;
+	if (n < 0)
+		return NULL;
 
-	return pool + (nextfree - 1);
+	MARK_USED(n);
+
+	memset_quad(pool + n, 0, sizeof(page_t) / sizeof(uint64_t));
+
+	return pool + n;
 }
 
 static void
-page_free(page_t *p)
+page_table_free(page_t *p)
 {
+	int n = (p - pool) / sizeof(page_t);
 
+	MARK_FREE(n);
+}
+
+static int
+next_free()
+{
+	int i;
+
+	for (i = 0; i < POOLMAP_SIZE && poolmap[i] == 0; i++);
+
+	if (i == POOLMAP_SIZE)
+		return -1;
+
+	/* Find the index of the first 1 bit, that is the one that is free */
+	return (i << (sizeof(unsigned long) == 8 ? 6 : 5)) | __builtin_ctzl(poolmap[i]);
 }
 
 static uint64_t

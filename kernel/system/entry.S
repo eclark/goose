@@ -66,8 +66,6 @@ _entry2:
 	# set up pd, pdpt, pml4 and link them together
 	movl	$0x83, phys_pd
 	movl	$(0x83 + 1*(1<<21)), phys_pd + 8
-	movl	$(0x83 + 2*(1<<21)), phys_pd + 16
-	movl	$(0x83 + 3*(1<<21)), phys_pd + 24
 
 	movl	$(phys_pd + 0x03), phys_pdpt
 	movl	$(phys_pd + 0x03), (phys_pdpt + 0xff0)

@@ -23,11 +23,22 @@ main(uint32_t magic, uint32_t addr)
 		return;
 	}
 
+	/* Some parts of the initialization depend on dynamic memory allocation
+	 * in the kernel. entry.S reserves the second 2MB page for this purpose
+	 * Further allocation of space beyond the initial 2MB heap requires a
+	 * the page frame allocator. */
+	kbfree(VIRTUAL(0x200000), 0x200000);
+
+	/* Set up the page frame allocator */
+	//frame_init();
+
+	/* Parse the ACPI tables for information needed by the other drivers */
 	if (acpi_init()) {
 		kprintf("acpi_init failed.\n");
 		return;
 	}
 
+	/* Initialize the interrupt controller */
 	apic_init();
 
 	/* print cpu identification */
@@ -41,6 +52,28 @@ main(uint32_t magic, uint32_t addr)
 	char buf[49];
 	processor_brand(buf);
 	kprintf("%s\n", buf);
+
+	uintptr_t phys;
+/*
+	phys = frame_alloc(LARGE_PAGE);
+	kprintf("A1: %#lx\n", phys);
+	frame_free(phys);
+	phys = frame_alloc(LARGE_PAGE);
+	kprintf("A2: %#lx\n", phys);
+	frame_free(phys); */
+
+	int *x;
+
+	kprintf("x = %#lx\n", x);
+	x = kmalloc(sizeof(int));
+
+	kprintf("x = %#lx\t*x = %#x\n", x, *x);
+
+	*x = 0xDEADBEEF;
+	kprintf("x = %#lx\t*x = %#x\n", x, *x);
+
+	kfree(x);
+	kprintf("x = %#lx\n", x);
 }
 
 void

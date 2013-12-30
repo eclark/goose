@@ -6,6 +6,11 @@
 #define KERNEL_ESP 0x200000
 #define HIGH_HALF 0xffffffff80000000
 
+/* Initial kernel heap to use before the memory subsystem can assign
+ * physical pages */
+#define KERNEL_HEAP_ADDR 0x200000
+#define KERNEL_HEAP_SIZE 0x200000
+
 #define VIRTUAL(addr) (void*)((uint64_t)(addr) + HIGH_HALF)
 #define ALIGN(addr, nbytes) (void*)(((uint64_t)(addr) + (nbytes) - 1) & ~((nbytes) -1))
 

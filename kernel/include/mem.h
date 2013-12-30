@@ -2,6 +2,7 @@
 #define _MEM_H
 
 #include <types.h>
+#include <kmalloc.h>
 
 typedef enum {
 	STANDARD_PAGE = 0,
@@ -38,5 +39,10 @@ void *map_page(unsigned long phys, page_size_t ps);
 void *memcpy(void *dest, const void *src, size_t n);
 void *memset_quad(void *s, int64_t c, size_t n);
 void *memmove_quad(void* dest, const void* src, size_t n);
+
+int frame_init(void);
+uintptr_t frame_alloc(page_size_t ps);
+uintptr_t frame_reserve(uintptr_t phys_addr, page_size_t ps);
+void frame_free(uintptr_t phys_addr);
 
 #endif
