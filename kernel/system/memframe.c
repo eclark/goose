@@ -10,21 +10,16 @@
  *
  */
 
-/* 32 byte frame tracking */
-typedef struct frame {
-	struct frame *next;
-	struct frame *prev;
-	uintptr_t addr;
-	size_t refcnt;
-} frame_t;
-
 static frame_t *build(uintptr_t start, size_t len, page_size_t ps);
 static inline frame_t *push(frame_t **head, frame_t *f);
+static inline frame_t *pop(frame_t **head);
 static inline frame_t *remove(frame_t *f);
 
 /*static frame_t *free_huge;*/
 static frame_t *free_large;
 static frame_t *free_standard;
+
+static frame_t *used_large;
 
 int
 frame_init(void)
@@ -39,17 +34,19 @@ frame_init(void)
 	 */
 
 	/* We reserved the 0 to 4MB in entry.S, so the first free is at 4MB */
-	free_large = build(0x400000, 0x7ffe000, LARGE_PAGE);
+	free_large = build(0x400000, (0x7ffe000 - 0x400000) / page_size(LARGE_PAGE), LARGE_PAGE);
+
+	free_standard = NULL;
+	used_large = NULL;
 
 	return 0;
 }
 
-uintptr_t
+frame_t *
 frame_alloc(page_size_t ps)
 {
 	uint64_t flags;
 	frame_t *frame;
-	uintptr_t addr;
 	cli_ifsave(&flags);
 
 	switch (ps) {
@@ -57,52 +54,108 @@ frame_alloc(page_size_t ps)
 			frame = NULL;
 			break;
 		case LARGE_PAGE:
-			frame = remove(free_large);
+			frame = pop(&free_large);
 			break;
 		case STANDARD_PAGE:
 			if (free_standard == NULL) {
-				addr = frame_alloc(LARGE_PAGE);
-				if (addr == 0)
+				frame = frame_alloc(LARGE_PAGE);
+				if (frame == 0)
 					break;
-				free_standard = build(addr, page_size(LARGE_PAGE), STANDARD_PAGE);
+				push(&used_large, frame);
+				frame->refcnt++;
+				free_standard = build(frame->phys,
+					page_size(LARGE_PAGE) / page_size(STANDARD_PAGE),
+					STANDARD_PAGE);
 			}
-			frame = remove(free_standard);
+			frame = pop(&free_standard);
 			break;
 	}
 
 	ifrestore(flags);
-	return frame->addr;
+	return frame;
 }
 
-uintptr_t
+frame_t *
 frame_reserve(uintptr_t phys_addr, page_size_t ps)
 {
 	return 0;
 }
 
 void
-frame_free(uintptr_t phys_addr)
+frame_free(frame_t *f)
 {
+	frame_t **free, *curr;
+	uint64_t flags;
+	cli_ifsave(&flags);
+
+	if (f == NULL)
+		return;
+
+	if (f->ps == LARGE_PAGE) {
+		free = &free_large;
+	} else if (f->ps == STANDARD_PAGE) {
+		free = &free_standard;
+	} else {
+		/* TODO die */
+	}
+
+	if (*free == NULL) {
+		push(free, f);
+	} else {
+		/* walk forward */
+		for (curr = *free; curr->next != NULL && curr->phys < f->phys; curr = curr->next);
+
+		/* insert before curr */
+		f->prev = curr->prev;
+		f->next = curr;
+		if (curr->prev != NULL)
+			curr->prev->next = f;
+		curr->prev = f;
+
+		/* Move the head if necessary */
+		if (f->prev == NULL)
+			*free = (*free)->prev;
+	}
+
+	ifrestore(flags);
+}
+
+void
+framelist_add(frame_t **head, frame_t *f)
+{
+
+
+}
+
+frame_t *
+framelist_remove(frame_t **head, frame_t *f)
+{
+
 
 }
 
 static frame_t *
-build(uintptr_t start, size_t len, page_size_t ps)
+build(uintptr_t start, size_t npages, page_size_t ps)
 {
-	frame_t *curr, *frame;
+	size_t i;
+	frame_t *f, *cp, *pp;
 
-	frame = curr = (void*)start;
-	frame->prev = NULL;
-
-	while ((uintptr_t)curr + page_size(ps) <= start + len) {
-		curr->next = (frame_t*)((uintptr_t)curr + page_size(ps));
-		curr->next->prev = curr;
-
-		curr = curr->next;
+	f = pp = kmalloc(sizeof(frame_t));
+	pp->prev = NULL;
+	pp->phys = start;
+	pp->refcnt = 0;
+	pp->ps = ps;
+	for (i = 1; i < npages; i++) {
+		pp->next = cp = kmalloc(sizeof(frame_t));
+		cp->prev = pp;
+		cp->phys = start + i*page_size(ps);
+		cp->refcnt = 0;
+		cp->ps = ps;
+		pp = cp;
 	}
-	curr->next = NULL;
+	pp->next = NULL;
 
-	return frame;
+	return f;
 }
 
 static inline frame_t *
@@ -118,6 +171,24 @@ push(frame_t **head, frame_t *f)
 	*head = f;
 
 	return f;
+}
+
+static inline frame_t *
+pop(frame_t **head)
+{
+	frame_t *ret;
+
+	if (head == NULL || *head == NULL)
+		return NULL;
+
+	ret = *head;
+	*head = (*head)->next;
+	if (*head != NULL)
+		(*head)->prev = ret->prev;
+
+	ret->prev = ret->next = NULL;
+
+	return ret;
 }
 
 static inline frame_t *

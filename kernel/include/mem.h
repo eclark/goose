@@ -5,10 +5,19 @@
 #include <kmalloc.h>
 
 typedef enum {
-	STANDARD_PAGE = 0,
-	LARGE_PAGE = 1,
-	HUGE_PAGE = 2
+	STANDARD_PAGE = 1,
+	LARGE_PAGE = 2,
+	HUGE_PAGE = 4
 } page_size_t;
+
+/* 40 byte frame tracking */
+typedef struct frame {
+	struct frame *next;
+	struct frame *prev;
+	uintptr_t phys;
+	size_t refcnt;
+	page_size_t ps;
+} frame_t;
 
 static inline size_t
 page_size(page_size_t ps)
@@ -41,8 +50,11 @@ void *memset_quad(void *s, int64_t c, size_t n);
 void *memmove_quad(void* dest, const void* src, size_t n);
 
 int frame_init(void);
-uintptr_t frame_alloc(page_size_t ps);
-uintptr_t frame_reserve(uintptr_t phys_addr, page_size_t ps);
-void frame_free(uintptr_t phys_addr);
+frame_t *frame_alloc(page_size_t ps);
+frame_t *frame_reserve(uintptr_t phys_addr, page_size_t ps);
+void frame_free(frame_t *f);
+
+void framelist_add(frame_t **head, frame_t *f);
+frame_t *framelist_remove(frame_t **head, frame_t *f);
 
 #endif

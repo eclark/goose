@@ -3,6 +3,8 @@
 #include <x86_64.h>
 #include <types.h>
 
+#include <system.h>
+
 /*
  * Simple memory allocator based on K&R section 8.7. It should be replaced
  * when the kernel becomes more advanced.
@@ -13,7 +15,6 @@ typedef struct header {
 	size_t size;			/* size of block = size * sizeof(header_t) */
 } header_t;
 
-static header_t *initialcore(void);
 static header_t *morecore(size_t);
 
 static header_t sentinel = { &sentinel, 0 };
@@ -81,14 +82,11 @@ kfree(void *ap)
 static header_t *
 morecore(size_t nu)
 {
-	header_t *up;
+	kprintf("shit.\n");
 
-	int64_t x = 4;
-	int64_t y = 0;
+	while (1);
 
-	int64_t c = x / y;
-
-	return (header_t*)c;
+	return (header_t*)0;
 }
 
 void *

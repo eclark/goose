@@ -30,7 +30,7 @@ main(uint32_t magic, uint32_t addr)
 	kbfree(VIRTUAL(0x200000), 0x200000);
 
 	/* Set up the page frame allocator */
-	//frame_init();
+	frame_init();
 
 	/* Parse the ACPI tables for information needed by the other drivers */
 	if (acpi_init()) {
@@ -53,14 +53,19 @@ main(uint32_t magic, uint32_t addr)
 	processor_brand(buf);
 	kprintf("%s\n", buf);
 
-	uintptr_t phys;
-/*
-	phys = frame_alloc(LARGE_PAGE);
-	kprintf("A1: %#lx\n", phys);
-	frame_free(phys);
-	phys = frame_alloc(LARGE_PAGE);
-	kprintf("A2: %#lx\n", phys);
-	frame_free(phys); */
+	frame_t *p;
+
+	p = frame_alloc(STANDARD_PAGE);
+	kprintf("A1: %#lx %#lx\n", p, p->phys);
+	frame_free(p);
+
+	p = frame_alloc(STANDARD_PAGE);
+	kprintf("A2: %#lx %#lx\n", p, p->phys);
+	frame_free(p);
+
+	p = frame_alloc(LARGE_PAGE);
+	kprintf("A3: %#lx %#lx\n", p, p->phys);
+	frame_free(p);
 
 	int *x;
 
