@@ -14,8 +14,10 @@
 void
 main(uint32_t magic, uint32_t addr)
 {
-	vc_clear();
+	/* Temporary place for the memory map of the initial process */
+	static frame_t *mmap;
 
+	vc_clear();
 	kconsole = &uartdev;
 
 	if (multiboot_init(magic, addr)) {
@@ -29,8 +31,38 @@ main(uint32_t magic, uint32_t addr)
 	 * the page frame allocator. */
 	kbfree(VIRTUAL(0x200000), 0x200000);
 
-	/* Set up the page frame allocator */
-	frame_init();
+	/* Set up the page frame allocator. TODO Fix this to read the multiboot
+	 * tables. */
+	{
+		uintptr_t p = 0;
+		frame_t *curr;
+
+		curr = kmalloc(sizeof(frame_t));
+		curr->phys = 0;
+		curr->refcnt = 1;
+		curr->ps = LARGE_PAGE;
+		framelist_add(&mmap, curr);
+
+		curr = kmalloc(sizeof(frame_t));
+		curr->phys = 2 * 1024 * 1024;
+		curr->refcnt = 1;
+		curr->ps = LARGE_PAGE;
+		framelist_add(&mmap, curr);
+
+		curr = kmalloc(sizeof(frame_t));
+		curr->phys = 126 * 1024 * 1024;
+		curr->refcnt = 1;
+		curr->ps = LARGE_PAGE;
+		framelist_add(&mmap, curr);
+
+		for (p = 4*1024*1024; p < 126 * 1024 * 1024; p += page_size(LARGE_PAGE)) {
+			curr = kmalloc(sizeof(frame_t));
+			curr->phys = p;
+			curr->refcnt = 0;
+			curr->ps = LARGE_PAGE;
+			frame_free(curr);
+		}
+	}
 
 	/* Parse the ACPI tables for information needed by the other drivers */
 	if (acpi_init()) {
@@ -56,16 +88,19 @@ main(uint32_t magic, uint32_t addr)
 	frame_t *p;
 
 	p = frame_alloc(STANDARD_PAGE);
+	framelist_add(&mmap, p);
 	kprintf("A1: %#lx %#lx\n", p, p->phys);
-	frame_free(p);
+	frame_free(framelist_remove(&mmap, p));
 
 	p = frame_alloc(STANDARD_PAGE);
+	framelist_add(&mmap, p);
 	kprintf("A2: %#lx %#lx\n", p, p->phys);
-	frame_free(p);
+	frame_free(framelist_remove(&mmap, p));
 
 	p = frame_alloc(LARGE_PAGE);
+	framelist_add(&mmap, p);
 	kprintf("A3: %#lx %#lx\n", p, p->phys);
-	frame_free(p);
+	frame_free(framelist_remove(&mmap, p));
 
 	int *x;
 

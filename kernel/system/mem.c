@@ -17,7 +17,7 @@
 #define PHYSICAL(ptr) (lookup_phys((void*)(ptr)))
 
 /* Aligned down */
-#define SET_ADDR(pe, addr, mask) ((pe->v) |= (((pe)->v & ~(mask)) | ((addr) & (mask))))
+#define SET_ADDR(pe, addr, mask) (((pe)->v) = (((pe)->v & ~(mask)) | ((addr) & (mask))))
 
 /* See Intel manual pg. 1965 */
 typedef struct {
@@ -43,11 +43,11 @@ typedef struct {
 
 typedef struct page_struct {
 	page_entry_t entry[512];
-} page_t;
+} page_table_t;
 
 static uint64_t lookup_phys(void *object);
-static page_t *page_table_alloc(void);
-static void page_table_free(page_t *p);
+static page_table_t *page_table_alloc(void);
+static void page_table_free(page_table_t *p);
 
 static int next_free();
 #define POOL_SIZE 512
@@ -56,12 +56,12 @@ static int next_free();
 #define MARK_USED(n) (poolmap[(n) >> 3] &= ~(1 << ((n) & 0x7)))
 
 static unsigned long poolmap[POOLMAP_SIZE];
-static page_t pool[POOL_SIZE] __attribute__((aligned(4096)));
+static page_table_t pool[POOL_SIZE] __attribute__((aligned(4096)));
 
 void *
 map_page(unsigned long phys, page_size_t ps)
 {
-	page_t *pml4, *pdpt, *pd, *pt;
+	page_table_t *pml4, *pdpt, *pd, *pt;
 	page_entry_t *pml4e, *pdpte, *pde, *pte;
 	uint64_t flags;
 	void *ret = VIRTUAL(phys);
@@ -149,7 +149,7 @@ end:
 	return ret;
 }
 
-static page_t *
+static page_table_t *
 page_table_alloc(void)
 {
 	int n = next_free();
@@ -159,15 +159,15 @@ page_table_alloc(void)
 
 	MARK_USED(n);
 
-	memset_quad(pool + n, 0, sizeof(page_t) / sizeof(uint64_t));
+	memset_quad(pool + n, 0, sizeof(page_table_t) / sizeof(uint64_t));
 
 	return pool + n;
 }
 
 static void
-page_table_free(page_t *p)
+page_table_free(page_table_t *p)
 {
-	int n = (p - pool) / sizeof(page_t);
+	int n = (p - pool) / sizeof(page_table_t);
 
 	MARK_FREE(n);
 }
@@ -189,7 +189,7 @@ next_free()
 static uint64_t
 lookup_phys(void *object)
 {
-	page_t *pml4, *pdpt, *pd, *pt;
+	page_table_t *pml4, *pdpt, *pd, *pt;
 	page_entry_t *pml4e, *pdpte, *pde, *pte;
 	uint64_t virt = (uint64_t)VIRTUAL(object);
 

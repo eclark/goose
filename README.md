@@ -12,3 +12,7 @@ make install-gcc
 
 Install grub2
 Install xorriso
+
+Notes on running.
+
+qemu-system-x86_64 -cdrom os.iso -serial stdio -display none -s

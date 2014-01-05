@@ -10,7 +10,6 @@ typedef enum {
 	HUGE_PAGE = 4
 } page_size_t;
 
-/* 40 byte frame tracking */
 typedef struct frame {
 	struct frame *next;
 	struct frame *prev;
@@ -49,7 +48,6 @@ void *memcpy(void *dest, const void *src, size_t n);
 void *memset_quad(void *s, int64_t c, size_t n);
 void *memmove_quad(void* dest, const void* src, size_t n);
 
-int frame_init(void);
 frame_t *frame_alloc(page_size_t ps);
 frame_t *frame_reserve(uintptr_t phys_addr, page_size_t ps);
 void frame_free(frame_t *f);
