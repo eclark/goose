@@ -1,5 +1,6 @@
 
 #include <x86_64.h>
+#include <acpi.h>
 #include <system.h>
 #include <mem.h>
 #include <multiboot2.h>

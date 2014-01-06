@@ -11,7 +11,7 @@
 #define KERNEL_HEAP_ADDR 0x200000
 #define KERNEL_HEAP_SIZE 0x200000
 
-#define VIRTUAL(addr) (void*)((uint64_t)(addr) + HIGH_HALF)
+#define VIRTUAL(addr) (void*)((uint64_t)(addr) | HIGH_HALF)
 #define ALIGN(addr, nbytes) (void*)(((uint64_t)(addr) + (nbytes) - 1) & ~((nbytes) -1))
 
 #ifndef ASM_FILE
@@ -44,13 +44,9 @@ typedef struct {
 	uint64_t ss;
 } __attribute__((packed)) regs_t;
 
-typedef struct rsdp_struct rsdp_t;
-
 extern uint64_t boot_pml4;
-extern rsdp_t *rsdp;
 
 void processor_brand(char buf[49]);
-int acpi_init(void);
 
 static inline void
 cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)

@@ -2,6 +2,7 @@
 #include <system.h>
 #include <x86_64.h>
 #include <multiboot2.h>
+#include <acpi.h>
 #include <mem.h>
 #include <interrupt.h>
 #include <ioport.h>
@@ -24,6 +25,10 @@ main(uint32_t magic, uint32_t addr)
 		kprintf("multiboot2_init failed.\n");
 		return;
 	}
+
+	/* QEMU's hardware data structures are around 0x07f00000 */
+	map_page(0x07e00000, LARGE_PAGE);
+	flush_tlb();
 
 	/* Some parts of the initialization depend on dynamic memory allocation
 	 * in the kernel. entry.S reserves the second 2MB page for this purpose
@@ -71,7 +76,10 @@ main(uint32_t magic, uint32_t addr)
 	}
 
 	/* Initialize the interrupt controller */
-	apic_init();
+	if (apic_init()) {
+		kprintf("apic_init failed. No apic?\n");
+		return;
+	}
 
 	/* print cpu identification */
 	uint32_t regs[4];

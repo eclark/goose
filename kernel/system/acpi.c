@@ -1,45 +1,26 @@
 
+#include <acpi.h>
 #include <system.h>
 #include <x86_64.h>
 #include <mem.h>
 
+/*
+ * Everything here expects the memory location of the ACPI tables to be
+ * linearly mapped upward so the VIRTUAL macro can translate the physical
+ * addresses in the tables.
+ */
+
 #define RSDP_SIGNATURE 0x2052545020445352
 #define RSDP_SIZE(r) (r->revision == 1 ? sizeof(rsdp_t) : 20)
-#define SDT_COUNT ((rsdt->header.length - sizeof(sdt_header_t))/4)
-
-struct rsdp_struct {
-	char signature[8];
-	uint8_t checksum;
-	char oem_id[6];
-	uint8_t revision;
-	uint32_t rsdt_addr;
-
-	/* Version 2 fields */
-	uint32_t length;
-	uint64_t xsdt_addr;
-	uint8_t extended_checksum;
-	uint8_t reserved[3];
-};
-
-typedef struct {
-	char signature[4];
-	uint32_t length;
-	uint8_t revision;
-	uint8_t checksum;
-	char oem_id[6];
-	char oem_table_id[8];
-	uint32_t oem_revision;
-	uint32_t creator_id;
-	uint32_t creator_revision;
-} sdt_header_t;
-
-typedef struct {
-	sdt_header_t header;
-	uint32_t sdt[0];
-} rsdt_t;
+#define SDT_COUNT ((rsdt->h.length - sizeof(sdt_header_t))/4)
 
 static bool checksum(sdt_header_t *sdt);
-static sdt_header_t *find(void);
+
+const acpi_signature_t ACPI_FADT = 0x50434146; /* FACP */ 
+const acpi_signature_t ACPI_SSDT = 0x54445353; /* SSDT */
+const acpi_signature_t ACPI_MADT = 0x43495041; /* APIC */
+const acpi_signature_t ACPI_HPET = 0x54455048; /* HPET */
+const acpi_signature_t ACPI_DSDT = 0x54445344; /* DSDT */
 
 rsdp_t *rsdp;
 rsdt_t *rsdt;
@@ -49,6 +30,8 @@ acpi_init(void)
 {
 	int i;
 	uint8_t sum;
+	acpi_iter_t it;
+	char buf[5];
 
 	/* Check that the rsdp is valid */
 	if (*(uint64_t*)rsdp->signature != RSDP_SIGNATURE)
@@ -65,29 +48,87 @@ acpi_init(void)
 
 	/* Set up the root system descriptor table */
 	kprintf("RSDT_ADDR %#x\n", rsdp->rsdt_addr);
-	rsdt = map_page(rsdp->rsdt_addr, LARGE_PAGE);
-	flush_tlb();
+	rsdt = VIRTUAL(rsdp->rsdt_addr);
 
-	char buf[5];
-	for (i = 0; i < SDT_COUNT; i++) {
-		sdt_header_t *q = VIRTUAL(rsdt->sdt[i]);
-		memcpy(buf, q->signature, 4);
-		buf[4] = 0;
+	if (!acpi_rsdt_iter_new(&it, rsdt))
+		return -1;
 
-		kprintf("%#x %#lx %s\n", rsdt->sdt[i], q, buf);
-	}
+	buf[4] = 0;
+	do {
+		acpi_table_t *t = acpi_rsdt_iter_val(&it);
+
+		memcpy(buf, t->h.signature, 4);
+		kprintf("%#lx %d %s\n", t, t->h.length, buf);
+	} while (acpi_rsdt_iter_next(&it));
 
 	return 0;
+}
+
+int
+acpi_rsdt_iter_new(acpi_iter_t *i, rsdt_t *rsdt)
+{
+	if (!checksum(&rsdt->h))
+		return 0;
+
+	i->curr = rsdt->entry;
+	i->end = (void*)rsdt + rsdt->h.length;
+
+	return 1;
+}
+
+int
+acpi_rsdt_iter_next(acpi_iter_t *i)
+{
+	acpi_table_t *t;
+
+	do {
+		i->curr += 4;
+
+		if (i->curr >= i->end)
+			return 0;
+
+		t = acpi_rsdt_iter_val(i);
+	} while (!checksum(&t->h));
+
+	return 1;
+}
+
+acpi_table_t *
+acpi_rsdt_iter_val(acpi_iter_t *i)
+{
+	return VIRTUAL(*(uint32_t*)(i->curr));
+}
+
+acpi_table_t *
+acpi_get(acpi_signature_t sig)
+{
+	acpi_iter_t it;
+
+	if (sig == ACPI_DSDT) {
+		acpi_table_t *fadt = acpi_get(ACPI_FADT);
+		return VIRTUAL(fadt->fadt.dsdt);
+	}
+
+	if (!acpi_rsdt_iter_new(&it, rsdt))
+		return NULL;
+
+	do {
+		acpi_table_t *t = acpi_rsdt_iter_val(&it);
+		if (t->h.acpi_signature == sig)
+			return t;
+	} while (acpi_rsdt_iter_next(&it));
+
+	return NULL;
 }
 
 static bool
 checksum(sdt_header_t *sdt)
 {
 	int i;
-	uint8_t sum;
+	uint8_t sum = 0;
 
 	for (i = 0; i < sdt->length; i++)
-		sum += ((char*)sdt)[i];
+		sum += ((int8_t*)sdt)[i];
 
 	return sum == 0;
 }
