@@ -68,9 +68,8 @@ _entry2:
 	movl	$(0x83 + 1*(1<<21)), phys_pd + 8
 
 	movl	$(phys_pd + 0x03), phys_pdpt
-	movl	$(phys_pd + 0x03), (phys_pdpt + 0xff0)
 	movl	$(phys_pdpt + 0x03), phys_pml4
-	movl	$(phys_pdpt + 0x03), (phys_pml4 + 0xff8)
+	movl	$(phys_pdpt + 0x03), (phys_pml4 + 0x800)
 
 	# set pml4
 	movl	$phys_pml4, %eax
@@ -144,7 +143,8 @@ _entry3:
 	lgdt	gdtr64h
 
 	# now we have high-half long mode
-	jmp 	entry64
+	movabs	$entry64, %rdx
+	jmpq 	*%rdx
 
 .data
 

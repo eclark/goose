@@ -1,5 +1,6 @@
 
 #include "vc.h"
+#include <x86_64.h>
 #include <mem.h>
 
 static ssize_t vc_write(chardev_t *dev, const char *buf, size_t nbyte);
@@ -7,7 +8,7 @@ static int vc_putchar(int ch);
 
 chardev_t vcdev = { NULL, vc_write };
 
-uint16_t *vga = (uint16_t*)0xffffffff800b8000;
+uint16_t *vga = VIRTUAL(0xb8000);
 
 static uint16_t cx, cy;
 static uint16_t cattr = 0x3000;

@@ -11,8 +11,8 @@
 
 entry64:
 	# unmap low half
-	movq	$0, kernel_pdpt
-	movq	$0, kernel_pml4
+	movabs	$kernel_pml4, %rax
+	movq	$0, (%rax)
 
 	# flush tlb
 	movq	$phys_pml4, %rax
@@ -20,15 +20,15 @@ entry64:
 
 	# build IDT that sends everything to one C function
 	# See Figure 6-7. Intel Volume 3
-	movq	$interrupt_linkage, %rax
+	movabs	$interrupt_linkage, %rax
 	shrq	$32, %rax
 
-	movq	$interrupt_linkage, %rbx
+	movabs	$interrupt_linkage, %rbx
 	shlq	$32, %rbx
 	movq	$0xffff000000000000, %rdx
 	andq	%rdx, %rbx
 
-	movq	$interrupt_linkage,	%rdx
+	movabs	$interrupt_linkage,	%rdx
 	andq	$0x0000ffff, %rdx
 	orq 	%rdx, %rbx
 
@@ -37,7 +37,7 @@ entry64:
 	orq		%rdx, %rbx
 
 	movq	$256, %rcx
-	movq	$idt, %rdx
+	movabs	$idt, %rdx
 1:
 	movq	%rbx, (%rdx)
 	movq	%rax, 8(%rdx)
@@ -46,7 +46,8 @@ entry64:
 	decq	%rcx
 	jnz 1b
 
-	lidt	idtr
+	movabs	$idtr, %rax
+	lidt	(%rax)
 
 	movq	$HIGH_HALF, %rdi
 	movq	%rdi, %rsi
