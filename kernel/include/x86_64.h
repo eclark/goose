@@ -59,5 +59,20 @@ cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
 	);
 }
 
+static inline uint64_t
+rdmsr(uint32_t ecx)
+{
+	uint64_t ret;
+	uint32_t edx, eax;
+
+	asm volatile ("rdmsr" : "=d"(edx),"=a"(eax) : "c"(ecx));
+
+	ret = edx;
+	ret <<= 32;
+	ret |= eax;
+
+	return ret;
+}
+
 #endif
 #endif

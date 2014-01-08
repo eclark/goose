@@ -15,6 +15,7 @@
 void
 main(uint32_t magic, uint32_t addr)
 {
+	int i;
 	/* Temporary place for the memory map of the initial process */
 	static frame_t *mmap;
 
@@ -28,6 +29,10 @@ main(uint32_t magic, uint32_t addr)
 
 	/* QEMU's hardware data structures are around 0x07f00000 */
 	map_page(0x07e00000, LARGE_PAGE);
+	/* APIC and other hardware are above 0xfe000000 */
+	for (i = 0; i < 16; i++) {
+		map_page(0xfe000000 + 0x200000 * i, LARGE_PAGE);
+	}
 	flush_tlb();
 
 	/* Some parts of the initialization depend on dynamic memory allocation

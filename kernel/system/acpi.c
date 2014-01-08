@@ -14,6 +14,8 @@
 #define RSDP_SIZE(r) (r->revision == 1 ? sizeof(rsdp_t) : 20)
 #define SDT_COUNT ((rsdt->h.length - sizeof(sdt_header_t))/4)
 
+#define NEXT_ICS(x) (acpi_ics_t*)((int8_t*)(x) + (x)->length)
+
 static bool checksum(sdt_header_t *sdt);
 
 const acpi_signature_t ACPI_FADT = 0x50434146; /* FACP */ 
@@ -97,6 +99,35 @@ acpi_table_t *
 acpi_rsdt_iter_val(acpi_iter_t *i)
 {
 	return VIRTUAL(*(uint32_t*)(i->curr));
+}
+
+int
+acpi_madt_iter_new(acpi_iter_t *i, madt_t *madt)
+{
+	if (!checksum(&madt->h))
+		return 0;
+
+	i->curr = madt->interrupt_controller_structure;
+	i->end = (void*)madt + madt->h.length;
+
+	return 1;
+}
+
+int
+acpi_madt_iter_next(acpi_iter_t *i)
+{
+	i->curr = NEXT_ICS((acpi_ics_t*)(i->curr));
+
+	if (i->curr >= i->end)
+		return 0;
+
+	return 1;
+}
+
+acpi_ics_t *
+acpi_madt_iter_val(acpi_iter_t *i)
+{
+	return i->curr;
 }
 
 acpi_table_t *

@@ -55,7 +55,16 @@ static int next_free();
 #define MARK_FREE(n) (poolmap[(n) >> 3] |= 1 << ((n) & 0x7))
 #define MARK_USED(n) (poolmap[(n) >> 3] &= ~(1 << ((n) & 0x7)))
 
-static unsigned long poolmap[POOLMAP_SIZE];
+static unsigned long poolmap[POOLMAP_SIZE] = {
+	0xffffffffffffffff,
+	0xffffffffffffffff,
+	0xffffffffffffffff,
+	0xffffffffffffffff,
+	0xffffffffffffffff,
+	0xffffffffffffffff,
+	0xffffffffffffffff,
+	0xffffffffffffffff
+};
 static page_table_t pool[POOL_SIZE] __attribute__((aligned(4096)));
 
 void *

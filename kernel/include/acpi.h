@@ -192,13 +192,12 @@ typedef struct {
 	uint16_t reserved : 12;
 } mps_inti_flags_t;
 
-#define NEXT_ICS(x) (interrupt_control_structure_t*)((int8_t*)(x) + (x)->length)
-
 typedef struct {
 	uint8_t type;
 	uint8_t length;
 	union {
 		struct { /* Type 0x00 Length 8 */
+#define ACPI_ICS_PROCESSOR_LOCAL_APIC 0x00
 			uint8_t acpi_processor_id;
 			uint8_t apic_id;
 			struct {
@@ -207,14 +206,16 @@ typedef struct {
 			} flags;
 		} processor_local_apic;
 
-		struct { /* Type 0x01 Length 12 */
+		struct __attribute__((packed)) { /* Type 0x01 Length 12 */
+#define ACPI_ICS_IO_APIC 0x01
 			uint8_t io_apic_id;
 			uint8_t reserved0;
 			uint32_t io_apic_address;
 			uint32_t global_system_interrupt_base;
 		} io_apic;
 
-		struct { /* Type 0x02 Length 10 */
+		struct __attribute__((packed)) { /* Type 0x02 Length 10 */
+#define ACPI_ICS_INTERRUPT_SOURCE_OVERRIDE 0x02
 			uint8_t bus;
 			uint8_t source;
 			uint32_t global_system_interrupt;
@@ -222,22 +223,26 @@ typedef struct {
 		} interrupt_source_override;
 
 		struct { /* Type 0x03 Length 8 */
+#define ACPI_ICS_NON_MASKABLE_SOURCE 0x03
 			mps_inti_flags_t flags;
 			uint32_t global_system_interrupt;
 		} non_maskable_source;
 
-		struct { /* Type 0x04 Length 6 */
+		struct __attribute__((packed)) { /* Type 0x04 Length 6 */
+#define ACPI_ICS_LOCAL_APIC_NMI 0x04
 			uint8_t acpi_processor_id;
 			mps_inti_flags_t flags;
 			uint8_t local_apic_lintn;
 		} local_apic_nmi;
 
 		struct { /* Type 0x05 Length 12 */
+#define ACPI_ICS_LOCAL_APIC_ADDRESS_OVERRIDE 0x05
 			uint16_t reserved;
 			uint64_t local_apic_address;
 		} local_apic_address_override;
 
 		struct { /* Type 0x06 Length 16 */
+#define ACPI_ICS_IO_SAPIC 0x06
 			uint8_t io_apic_id;
 			uint8_t reserved;
 			uint32_t global_system_interrupt_base;
@@ -245,6 +250,7 @@ typedef struct {
 		} io_sapic;
 
 		struct { /* Type 0x07 Length N */
+#define ACPI_ICS_PROCESSOR_LOCAL_SAPIC 0x07
 			uint8_t acpi_processor_id;
 			uint8_t local_sapic_id;
 			uint8_t local_sapic_eid;
@@ -258,6 +264,7 @@ typedef struct {
 		} processor_local_sapic;
 
 		struct { /* Type 0x08 Length 16 */
+#define ACPI_ICS_PLATFORM_INTERRUPT_SOURCES 0x08
 			mps_inti_flags_t flags;
 			uint8_t interrupt_type;
 			uint8_t processor_id;
@@ -271,6 +278,7 @@ typedef struct {
 		} platform_interrupt_sources;
 
 		struct { /* Type 0x09 Length 12 */
+#define ACPI_ICS_PROCESSOR_LOCAL_X2APIC 0x09
 			uint16_t reserved;
 			uint32_t x2apic_id;
 			struct {
@@ -281,6 +289,7 @@ typedef struct {
 		} processor_local_x2apic;
 
 		struct { /* Type 0x0a Length 12 */
+#define ACPI_ICS_LOCAL_X2APIC_NMI 0x0a
 			mps_inti_flags_t flags;
 			uint32_t acpi_processor_uid;
 			uint8_t local_x2apic_lintn;
@@ -288,6 +297,7 @@ typedef struct {
 		} local_x2apic_nmi;
 
 		struct { /* Type 0x0b Length 40 */
+#define ACPI_ICS_GIC 0x0b
 			uint16_t reserved;
 			uint32_t gic_id;
 			uint32_t acpi_processor_uid;
@@ -303,21 +313,22 @@ typedef struct {
 		} gic;
 
 		struct { /* Type 0x0c Length 24 */
+#define ACPI_ICS_GIC_DISTRIBUTOR 0x0c
 			uint16_t reserved0;
 			uint32_t gic_id;
 			uint64_t physical_base_address;
 			uint32_t system_vector_base;
 			uint32_t reserved1;
 		} gic_distributor;
-	};
-} interrupt_control_structure_t;
+	} __attribute__((packed));
+} __attribute__((packed)) acpi_ics_t;
 
 typedef struct {
 	sdt_header_t h;
 	uint32_t local_interrupt_controller_address;
 	madt_flags_t flags;
-	interrupt_control_structure_t interrupt_controller_structure[0];
-} madt_t;
+	acpi_ics_t interrupt_controller_structure[0];
+} __attribute__((packed)) madt_t;
 
 typedef struct {
 	uint32_t event_timer_block_id;
@@ -347,6 +358,10 @@ typedef struct {
 int acpi_rsdt_iter_new(acpi_iter_t *i, rsdt_t *rsdt);
 int acpi_rsdt_iter_next(acpi_iter_t *i);
 acpi_table_t *acpi_rsdt_iter_val(acpi_iter_t *i);
+
+int acpi_madt_iter_new(acpi_iter_t *i, madt_t *madt);
+int acpi_madt_iter_next(acpi_iter_t *i);
+acpi_ics_t *acpi_madt_iter_val(acpi_iter_t *i);
 
 int acpi_init(void);
 acpi_table_t *acpi_get(acpi_signature_t sig);
