@@ -10,6 +10,13 @@
 #define I8259_SLAVE_DATA 0xa1
 #define I8259_DISABLE 0xff
 
+#define IOREGSEL 0x00
+#define IOWIN 0x10
+#define IOAPICID 0x00
+#define IOAPICVER 0x01
+#define IOAPICARB 0x02
+#define IOREDTBL 0x10
+
 typedef struct {
 	union {
 		uint64_t v;
@@ -27,6 +34,9 @@ typedef struct {
 		};
 	};
 } ioapic_red_t;
+
+static uint32_t read_lapic(uint8_t offset);
+static void write_lapic(uint8_t offset, uint32_t val);
 
 static uint32_t read_ioapic(uint8_t offset);
 static void write_ioapic(uint8_t offset, uint32_t val);
@@ -98,33 +108,76 @@ apic_init(void)
 		}
 	} while (acpi_madt_iter_next(&it));
 
+	/* This should match the value found in the ACPI table.
+	 * What if it doesn't? I dont know... */
 	uint64_t ia32_apic_base = rdmsr(0x1B);
 	kprintf("IA32_APIC_BASE %#lx\n", ia32_apic_base);
 
-	kprintf("LAPICID %#x LAPICVER %#x\n",
-		*(lapic_base + 8), *(lapic_base + 12));
+	kprintf("LAPICID %#x LAPICVER %#x\n", read_lapic(0x20), read_lapic(0x30));
 
 	kprintf("IOAPICID %#x IOAPICVER %#x IOAPICARB %#x\n",
-		read_ioapic(0x00), read_ioapic(0x01), read_ioapic(0x02));
+		read_ioapic(IOAPICID), read_ioapic(IOAPICVER), read_ioapic(IOAPICARB));
 
 	for (i = 0; i < 24; i++) {
 		uint64_t redtbl = 0;
 
-		redtbl |= read_ioapic(0x10 + 2 * i);
-		redtbl |= (uint64_t)read_ioapic(0x10 + 2 * i + 1) << 32;
+		redtbl |= read_ioapic(IOREDTBL + 2 * i);
+		redtbl |= (uint64_t)read_ioapic(IOREDTBL + 2 * i + 1) << 32;
 
 		kprintf("IOREDTBL%d %#lx\n", i, redtbl);
 	}
 
-	/* Configure an interrupt for testing */
-	write_ioapic(0x12, 0x21);
-
 	/* Enable APIC */
-	uint32_t x = *(lapic_base + 0xf0);
-	x |= 0x100;
-	*(lapic_base + 0xf0) = x;
+	write_lapic(0xf0, read_lapic(0xf0) | 0x100);
 
 	return 0;
+}
+
+void
+enable_isa_irq(uint8_t irq)
+{
+	uint64_t flags;
+
+	cli_ifsave(&flags);
+	write_ioapic(IOREDTBL + 2 * irq, IRQBASEVEC + irq);
+
+	ifrestore(flags);
+}
+
+void
+disable_isa_irq(uint8_t irq)
+{
+	uint64_t flags;
+
+	cli_ifsave(&flags);
+	write_ioapic(IOREDTBL + 2 * irq, IRQBASEVEC + irq);
+
+	ifrestore(flags);
+}
+
+void
+send_eoi(uint8_t irq)
+{
+	uint64_t flags;
+	cli_ifsave(&flags);
+
+	write_lapic(0xb0, IRQBASEVEC + irq);
+
+	ifrestore(flags);
+}
+
+static uint32_t
+read_lapic(uint8_t offset)
+{
+	assert(offset & 0xf == 0);
+	return *(lapic_base + (offset >> 2));
+}
+
+static void
+write_lapic(uint8_t offset, uint32_t val)
+{
+	assert(offset & 0xf == 0);
+	*(lapic_base + (offset >> 2)) = val;
 }
 
 /* Unsafe, caller must CLI/STI */

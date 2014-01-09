@@ -16,6 +16,8 @@ char * strnrev(char *s, size_t nbytes);
 
 int kprintf(const char *format, ...);
 
+#define assert(x)
+
 char * ltoa(long value, char *str, int base);
 
 extern chardev_t *kconsole;

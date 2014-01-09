@@ -12,6 +12,10 @@
 
 #define PTYP(x) kprintf("sizeof(" #x ") = %z\n", sizeof(x))
 
+static int kbd(regs_t *regs);
+
+static handler_t intvec[256];
+
 void
 main(uint32_t magic, uint32_t addr)
 {
@@ -128,18 +132,35 @@ main(uint32_t magic, uint32_t addr)
 	kfree(x);
 	kprintf("x = %#lx\n", x);
 
+	/* Enable an interrpt for testing */
+	bind_vector(IRQBASEVEC + 1, kbd);
+	enable_isa_irq(1);
 
 	sti();
 	while (1) {
 		asm volatile("hlt");
-		kprintf("Interrupted\n");
 	}
+}
+
+static int
+kbd(regs_t *regs)
+{
+	kprintf("Kbd\n");
+
+	send_eoi(1);
+
+	return 1;
 }
 
 void
 interrupt(regs_t* regs)
 {
 	uint64_t cr2;
+
+	assert(regs->vector < 256);
+
+	if (intvec[regs->vector] != NULL && intvec[regs->vector](regs))
+		return;
 
 	kprintf(
 		"=== PANIC ==================================================\n"
@@ -174,4 +195,18 @@ interrupt(regs_t* regs)
 	kprintf("\nHalted\n");
 
 	asm volatile("1: hlt; jmp 1b;");
+}
+
+void
+bind_vector(uint8_t irq, handler_t f)
+{
+	assert(intvec[irq] == NULL);
+
+	intvec[irq] = f;
+}
+
+void
+clear_vector(uint8_t irq)
+{
+	intvec[irq] = NULL;
 }

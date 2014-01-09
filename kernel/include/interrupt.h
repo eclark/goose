@@ -1,11 +1,19 @@
 #ifndef _INTERRUPT_H
 #define _INTERRUPT_H
 
-#include "types.h"
+#include <x86_64.h>
+
+#define IRQBASEVEC 0x20
+
+typedef int (*handler_t)(regs_t *regs);
 
 int apic_init(void);
-void enable_irq(int8_t);
-void disable_irq(int8_t);
+void bind_vector(uint8_t irq, handler_t f);
+void clear_vector(uint8_t irq);
+void enable_isa_irq(uint8_t);
+void disable_isa_irq(uint8_t);
+
+void send_eoi(uint8_t irq);
 
 static inline void
 cli(void)

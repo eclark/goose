@@ -3,7 +3,7 @@
 CFLAGS += -std=gnu99 -Wall -m64 -mcmodel=large -ffreestanding -nostdlib -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
 CPPFLAGS += -Iinclude
 ASFLAGS += -m64
-LDFLAGS += -nostdlib -static -mcmodel=large -z max-page-size=0x1000
+LDFLAGS += -nostdlib -static -z max-page-size=0x1000
 CC=cross-gcc
 NM=cross-nm
 
