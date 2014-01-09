@@ -10,6 +10,24 @@
 #define I8259_SLAVE_DATA 0xa1
 #define I8259_DISABLE 0xff
 
+typedef struct {
+	union {
+		uint64_t v;
+		struct {
+			uint64_t intvec : 8;
+			uint64_t delmod : 3;
+			uint64_t destmod : 1;
+			uint64_t delivs : 1;
+			uint64_t intpol : 1;
+			uint64_t remote_irr : 1;
+			uint64_t trigger_mode : 1;
+			uint64_t interrupt_mask : 1;
+			uint64_t reserved : 39;
+			uint64_t destination : 8;
+		};
+	};
+} ioapic_red_t;
+
 static uint32_t read_ioapic(uint8_t offset);
 static void write_ioapic(uint8_t offset, uint32_t val);
 
@@ -83,7 +101,7 @@ apic_init(void)
 	uint64_t ia32_apic_base = rdmsr(0x1B);
 	kprintf("IA32_APIC_BASE %#lx\n", ia32_apic_base);
 
-	kprintf("LAPICID %#x LAPICVE %#x\n",
+	kprintf("LAPICID %#x LAPICVER %#x\n",
 		*(lapic_base + 8), *(lapic_base + 12));
 
 	kprintf("IOAPICID %#x IOAPICVER %#x IOAPICARB %#x\n",
@@ -97,6 +115,14 @@ apic_init(void)
 
 		kprintf("IOREDTBL%d %#lx\n", i, redtbl);
 	}
+
+	/* Configure an interrupt for testing */
+	write_ioapic(0x12, 0x21);
+
+	/* Enable APIC */
+	uint32_t x = *(lapic_base + 0xf0);
+	x |= 0x100;
+	*(lapic_base + 0xf0) = x;
 
 	return 0;
 }

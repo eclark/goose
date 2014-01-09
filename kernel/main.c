@@ -127,6 +127,13 @@ main(uint32_t magic, uint32_t addr)
 
 	kfree(x);
 	kprintf("x = %#lx\n", x);
+
+
+	sti();
+	while (1) {
+		asm volatile("hlt");
+		kprintf("Interrupted\n");
+	}
 }
 
 void
