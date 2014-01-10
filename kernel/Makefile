@@ -1,6 +1,6 @@
 # Makefile based on 391 but modified for 64 bit higher-half.
 
-CFLAGS += -std=gnu99 -Wall -m64 -mcmodel=large -ffreestanding -nostdlib -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
+CFLAGS += -DDEBUG -std=gnu99 -Wall -m64 -mcmodel=large -ffreestanding -nostdlib -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
 CPPFLAGS += -Iinclude
 ASFLAGS += -m64
 LDFLAGS += -nostdlib -static -z max-page-size=0x1000

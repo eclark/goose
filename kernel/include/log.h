@@ -32,11 +32,17 @@ do { \
 	kprintf(str, ##__VA_ARGS__); \
 } while (0)
 
+#ifdef DEBUG
+
 #define assert(x) \
 do { \
 	if (!(x)) { \
 		klogf(LOG_CRIT, "Assertion failed: " #x "\n"); \
 	} \
 } while (0) \
+
+#else
+#define assert(x) while(0)
+#endif
 
 #endif
