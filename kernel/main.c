@@ -24,7 +24,8 @@ main(uint32_t magic, uint32_t addr)
 	static frame_t *mmap;
 
 	vc_clear();
-	kconsole = &vcdev;
+	kconsole = &uartdev;
+	/* kconsole = &vcdev; */
 
 	if (multiboot_init(magic, addr)) {
 		kprintf("multiboot2_init failed.\n");

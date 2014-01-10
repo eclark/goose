@@ -2,6 +2,7 @@
 #define _SYSTEM_H
 
 #include <types.h>
+#include <log.h>
 
 typedef struct chardev_struct {
 	ssize_t (*read)(struct chardev_struct *dev, char *buf, size_t nbyte);
@@ -13,10 +14,6 @@ int multiboot_init(uint32_t magic, uint32_t addr);
 
 size_t strlen(const char *s);
 char * strnrev(char *s, size_t nbytes);
-
-int kprintf(const char *format, ...);
-
-#define assert(x)
 
 char * ltoa(long value, char *str, int base);
 

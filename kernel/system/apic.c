@@ -169,14 +169,14 @@ send_eoi(uint8_t irq)
 static uint32_t
 read_lapic(uint8_t offset)
 {
-	assert(offset & 0xf == 0);
+	assert((offset & 0xf) == 0);
 	return *(lapic_base + (offset >> 2));
 }
 
 static void
 write_lapic(uint8_t offset, uint32_t val)
 {
-	assert(offset & 0xf == 0);
+	assert((offset & 0xf) == 0);
 	*(lapic_base + (offset >> 2)) = val;
 }
 
