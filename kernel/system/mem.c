@@ -251,6 +251,26 @@ memcpy(void *dest, const void *src, size_t n)
 }
 
 void *
+memmove(void *dest, const void *src, size_t n)
+{
+	asm (
+		"	cld;"
+		"	cmpq %%rdi, %%rsi;"
+		"	jae 1f;"
+		"	leaq -8(%%rsi, %%rcx), %%rsi;"
+		"	leaq -8(%%rdi, %%rcx), %%rdi;"
+		"	std;"
+		"1:"
+		"	rep movsb"
+		:
+		: "D"(dest), "S"(src), "c"(n)
+		: "rdx", "memory", "cc"
+	);
+
+	return dest;
+}
+
+void *
 memset_quad(void *s, int64_t c, size_t n)
 {
 	asm (

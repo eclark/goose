@@ -24,7 +24,7 @@ main(uint32_t magic, uint32_t addr)
 	static frame_t *mmap;
 
 	vc_clear();
-	kconsole = &uartdev;
+	kconsole = &vcdev;
 
 	if (multiboot_init(magic, addr)) {
 		kprintf("multiboot2_init failed.\n");
@@ -90,6 +90,9 @@ main(uint32_t magic, uint32_t addr)
 		return;
 	}
 
+	uart_init();
+	kconsole = &uartdev;
+
 	/* print cpu identification */
 	uint32_t regs[4];
 	regs[3] = 0;
@@ -136,9 +139,13 @@ main(uint32_t magic, uint32_t addr)
 	bind_vector(IRQBASEVEC + 1, kbd);
 	enable_isa_irq(1);
 
+	buf[1] = 0;
+
 	sti();
 	while (1) {
-		asm volatile("hlt");
+		kconsole->read(kconsole, buf, 1);
+		kprintf("%d ", buf[0]);
+//		kprintf("kcon: %s\n", buf);
 	}
 }
 
