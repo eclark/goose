@@ -69,12 +69,21 @@ main(uint32_t magic, uint32_t addr)
 		curr->ps = LARGE_PAGE;
 		framelist_add(&mmap, curr);
 
+		/* Add the rest of the 0-128MB as free pages */
 		for (p = 4*1024*1024; p < 126 * 1024 * 1024; p += page_size(LARGE_PAGE)) {
 			curr = kmalloc(sizeof(frame_t));
 			curr->phys = p;
 			curr->refcnt = 0;
 			curr->ps = LARGE_PAGE;
 			frame_free(curr);
+		}
+
+		for (i = 0; i < 16; i++) {
+			curr = kmalloc(sizeof(frame_t));
+			curr->phys = 0xfe000000 + 0x200000 * i;
+			curr->refcnt = 1;
+			curr->ps = LARGE_PAGE;
+			framelist_add(&mmap, curr);
 		}
 	}
 
@@ -93,59 +102,15 @@ main(uint32_t magic, uint32_t addr)
 	uart_init();
 	kconsole = &uartdev;
 
-	/* print cpu identification */
-	uint32_t regs[4];
-	regs[3] = 0;
-	cpuid(regs + 3, regs, regs + 2, regs + 1);
-	regs[3] = 0;
-	kprintf("%s\n", regs);
-
-	/* print cpu brand */
-	char buf[49];
-	processor_brand(buf);
-	kprintf("%s\n", buf);
-
-	frame_t *p;
-
-	p = frame_alloc(STANDARD_PAGE);
-	framelist_add(&mmap, p);
-	kprintf("A1: %#lx %#lx\n", p, p->phys);
-	frame_free(framelist_remove(&mmap, p));
-
-	p = frame_alloc(STANDARD_PAGE);
-	framelist_add(&mmap, p);
-	kprintf("A2: %#lx %#lx\n", p, p->phys);
-	frame_free(framelist_remove(&mmap, p));
-
-	p = frame_alloc(LARGE_PAGE);
-	framelist_add(&mmap, p);
-	kprintf("A3: %#lx %#lx\n", p, p->phys);
-	frame_free(framelist_remove(&mmap, p));
-
-	int *x;
-
-	kprintf("x = %#lx\n", x);
-	x = kmalloc(sizeof(int));
-
-	kprintf("x = %#lx\t*x = %#x\n", x, *x);
-
-	*x = 0xDEADBEEF;
-	kprintf("x = %#lx\t*x = %#x\n", x, *x);
-
-	kfree(x);
-	kprintf("x = %#lx\n", x);
-
 	/* Enable an interrpt for testing */
 	bind_vector(IRQBASEVEC + 1, kbd);
 	enable_isa_irq(1);
 
-	buf[1] = 0;
-
 	sti();
 	while (1) {
-		kconsole->read(kconsole, buf, 1);
-		kprintf("%d ", buf[0]);
-//		kprintf("kcon: %s\n", buf);
+		char ch;
+		kconsole->read(kconsole, &ch, 1);
+		kprintf("%d ", ch);
 	}
 }
 
