@@ -15,11 +15,14 @@ OBJS  = system/entry.o
 OBJS += $(filter-out system/entry.o,$(patsubst %.S,%.o,$(filter %.S,$(SRC))))
 OBJS += $(patsubst %.c,%.o,$(filter %.c,$(SRC)))
 
-os.iso: ../iso/boot/kernel.sys
+os.iso: ../iso/boot/kernel.sys ../iso/boot/ramdisk
 	grub-mkrescue -d /usr/lib/grub/i386-pc -o $@ ../iso
 
 ../iso/boot/kernel.sys: kernel.sys kernel.sym
 	cp $< $@
+
+../iso/boot/ramdisk: ../ramdisk
+	tar -cnPzvf $@ --transform 's/^ramdisk//' -C .. ramdisk
 
 kernel.sys: Makefile linker.ld $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -Tlinker.ld -o $@

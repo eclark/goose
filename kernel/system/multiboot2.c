@@ -46,6 +46,9 @@ static char * tag_names[16] = {
 	"network"
 };
 
+uintptr_t initrd_phys;
+size_t initrd_len;
+
 int
 multiboot_init(uint32_t magic, uint32_t addr)
 {
@@ -67,6 +70,8 @@ multiboot_init(uint32_t magic, uint32_t addr)
 				break;
 			case MULTIBOOT_TAG_TYPE_MODULE:
 				kprintf("%#x %#x\n", tag->module.mod_start, tag->module.mod_end);
+				initrd_phys = tag->module.mod_start;
+				initrd_len = tag->module.mod_end - tag->module.mod_start;
 				break;
 			case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
 				kprintf("%#x %#x\n", tag->basic_meminfo.mem_lower, tag->basic_meminfo.mem_upper);

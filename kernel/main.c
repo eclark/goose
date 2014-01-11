@@ -10,11 +10,15 @@
 #include "device/vc.h"
 #include "device/uart.h"
 
+#include "fs/tar.h"
+
 #define PTYP(x) kprintf("sizeof(" #x ") = %z\n", sizeof(x))
 
 static int kbd(regs_t *regs);
 
 static handler_t intvec[256];
+
+extern uint8_t *_end;
 
 void
 main(uint32_t magic, uint32_t addr)
@@ -41,10 +45,10 @@ main(uint32_t magic, uint32_t addr)
 	flush_tlb();
 
 	/* Some parts of the initialization depend on dynamic memory allocation
-	 * in the kernel. entry.S reserves the second 2MB page for this purpose
-	 * Further allocation of space beyond the initial 2MB heap requires a
-	 * the page frame allocator. */
-	kbfree(VIRTUAL(0x200000), 0x200000);
+	 * in the kernel. Give it the rest of the second 2MB page, but leave
+	 * space for the ramdisk. */
+	/* TODO make this less fragile */
+	kbfree(VIRTUAL(initrd_phys + initrd_len), initrd_phys + initrd_len - 0x400000);
 
 	/* Set up the page frame allocator. TODO Fix this to read the multiboot
 	 * tables. */
@@ -102,6 +106,12 @@ main(uint32_t magic, uint32_t addr)
 
 	uart_init();
 	kconsole = &uartdev;
+
+	kprintf("initrd: %#lx %d\n", initrd_phys, initrd_len);
+
+	tar_demo(VIRTUAL(initrd_phys));
+
+	kprintf("Kernel End: %#lx\n", &_end);
 
 	/* Enable an interrpt for testing */
 	bind_vector(IRQBASEVEC + 1, kbd);

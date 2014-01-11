@@ -3,6 +3,7 @@
 *.sym
 *.o
 *.swp
+iso/boot/ramdisk
 kernel/.gdbinit
 kernel/.bochsrc
 kernel/none

@@ -56,4 +56,7 @@ void frame_free(frame_t *f);
 void framelist_add(frame_t **head, frame_t *f);
 frame_t *framelist_remove(frame_t **head, frame_t *f);
 
+extern uintptr_t initrd_phys;
+extern size_t initrd_len;
+
 #endif
