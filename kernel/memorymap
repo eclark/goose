@@ -1,0 +1,30 @@
+Physical Memory Map
+
+Above 4GB - Not presumed to exist.
+fffc0000 ffffffff ???? Reserved
+fee01000 fffdffff ????
+fee00000 fee00fff Local APIC
+fec01000 fedfffff ????
+fec00000 fec00fff IO APIC
+08000000 febfffff Free space
+07ffe000 07ffffff ACPI tables
+01000000 07ffdfff Free space
+00f00000 00ffffff Possible ISA Hole
+00100000 00efffff Free space
+000f0000 000fffff Motherboard BIOS
+000a0000 000effff Video RAM/ROM
+0009fc00 0009ffff Extended BIOS Data Area
+00000000 0009fbff Free space
+
+Virtual Memory Map
+
+Canonical higher half
+ffff800000000000-ffffffffffffffff
+
+ffff8000c0000000 Devices, strong uncachable, 4KB pages
+ffff800080000000 Kernel Heap, 4KB pages
+ffff800040000000 Kernel stacks, 8KB each (as two 4KB pages)
+ffff800000000000 Mapped to first 1GB physical, VIRTUAL(x) works here.
+
+Canonical lower half
+0000000000000000-00007fffffffffff
