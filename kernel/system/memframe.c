@@ -10,41 +10,83 @@
  *
  */
 
-static frame_t *build(uintptr_t start, size_t len, page_size_t ps);
+typedef struct region {
+	struct region *next, *prev;
+	uintptr_t phys;
+	size_t len;
+} region_t;
 
-/*static frame_t *free_huge;*/
-static frame_t *free_large;
-static frame_t *free_standard;
+static region_t *free;
+static frame_t *used;
 
-static frame_t *used_large;
+void
+region_free(uintptr_t phys, size_t len)
+{
+	uint64_t flags;
+	region_t *r;
+   
+	cli_ifsave(&flags);
+
+	r = kmalloc(sizeof(region_t));
+	r->phys = phys;
+	r->len = len;
+
+	if (free == NULL) {
+		r->next = r->prev = NULL;
+		free = r;
+	} else if (r->phys < free->phys) {
+		r->prev = NULL;
+		r->next = free;
+		free->prev = r;
+		free = r;
+	} else {
+		region_t *c = free;
+
+		while (c->next != NULL && c->next->phys < r->phys)
+			c = c->next;
+
+		r->prev = c;
+		r->next = c->next;
+		c->next = r;
+	}
+
+	ifrestore(flags);
+}
 
 frame_t *
-frame_alloc(page_size_t ps)
+frame_alloc(void)
 {
 	uint64_t flags;
 	frame_t *frame;
+	region_t *c;
+
 	cli_ifsave(&flags);
 
-	switch (ps) {
-		case HUGE_PAGE:
-			frame = NULL;
-			break;
-		case LARGE_PAGE:
-			frame = framelist_remove(&free_large, free_large);
-			break;
-		case STANDARD_PAGE:
-			if (free_standard == NULL) {
-				frame = frame_alloc(LARGE_PAGE);
-				if (frame == 0)
-					break;
-				framelist_add(&used_large, frame);
-				frame->refcnt++;
-				free_standard = build(frame->phys,
-					page_size(LARGE_PAGE) / page_size(STANDARD_PAGE),
-					STANDARD_PAGE);
+	c = free;
+	frame = NULL;
+
+	while (c != NULL) {
+		if (c->len >= FRAME_LEN) {
+			frame = kmalloc(sizeof(frame_t));
+			frame->phys = c->phys;
+			c->len -= FRAME_LEN;
+			c->phys += FRAME_LEN;
+
+			if (c->len == 0) {
+				if (c == free)
+					free = c->next;
+
+				if (c->next != NULL)
+					c->next->prev = c->prev;
+				if (c->prev != NULL)
+					c->prev->next = c->next;
+
+				kfree(c);
 			}
-			frame = framelist_remove(&free_standard, free_standard);
 			break;
+		} else {
+			c = c->next;
+		}
 	}
 
 	ifrestore(flags);
@@ -52,7 +94,7 @@ frame_alloc(page_size_t ps)
 }
 
 frame_t *
-frame_reserve(uintptr_t phys_addr, page_size_t ps)
+frame_reserve(uintptr_t phys_addr)
 {
 	return 0;
 }
@@ -60,22 +102,11 @@ frame_reserve(uintptr_t phys_addr, page_size_t ps)
 void
 frame_free(frame_t *f)
 {
-	frame_t **free;
 	uint64_t flags;
 	cli_ifsave(&flags);
 
-	if (f == NULL)
-		return;
-
-	if (f->ps == LARGE_PAGE) {
-		free = &free_large;
-	} else if (f->ps == STANDARD_PAGE) {
-		free = &free_standard;
-	} else {
-		/* TODO die */
-	}
-
-	framelist_add(free, f);
+	region_free(f->phys, FRAME_LEN);
+	kfree(f);
 
 	ifrestore(flags);
 }
@@ -115,26 +146,3 @@ framelist_remove(frame_t **head, frame_t *f)
 	return f;
 }
 
-static frame_t *
-build(uintptr_t start, size_t npages, page_size_t ps)
-{
-	size_t i;
-	frame_t *f, *cp, *pp;
-
-	f = pp = kmalloc(sizeof(frame_t));
-	pp->prev = NULL;
-	pp->phys = start;
-	pp->refcnt = 0;
-	pp->ps = ps;
-	for (i = 1; i < npages; i++) {
-		pp->next = cp = kmalloc(sizeof(frame_t));
-		cp->prev = pp;
-		cp->phys = start + i*page_size(ps);
-		cp->refcnt = 0;
-		cp->ps = ps;
-		pp = cp;
-	}
-	pp->next = NULL;
-
-	return f;
-}

@@ -1,18 +1,28 @@
 #ifndef _X86_64_H
 #define _X86_64_H
 
+#define HIGH_HALF 0xffff800000000000
+
 #define KERNEL_CS 0x08
 #define KERNEL_DS 0x10
-#define KERNEL_ESP 0x200000 /* Bad news */
-#define HIGH_HALF 0xffff800000000000
+#define KERNEL_EARLY_ESP 0x0009f000
+#define KERNEL_ESP 0x40002000
 
 /* Initial kernel heap to use before the memory subsystem can assign
  * physical pages */
-#define KERNEL_HEAP_ADDR 0x200000
-#define KERNEL_HEAP_SIZE 0x200000
+#define KERNEL_HEAP_ADDR 0x300000
+#define KERNEL_HEAP_SIZE 0x100000
 
 #define VIRTUAL(addr) (void*)((uint64_t)(addr) | HIGH_HALF)
 #define ALIGN(addr, nbytes) (void*)(((uint64_t)(addr) + (nbytes) - 1) & ~((nbytes) -1))
+
+/* Model specific registers */
+#define IA32_APIC_BASE 0x1b
+#define IA32_PAT 0x277
+#define IA32_EFER 0xc0000080
+#define IA32_STAR 0xc0000081
+#define IA32_LSTAR 0xc0000082
+#define IA32_FMASK 0xc0000084
 
 #ifndef ASM_FILE
 
@@ -60,18 +70,28 @@ cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
 }
 
 static inline uint64_t
-rdmsr(uint32_t ecx)
+rdmsr(uint32_t msr)
 {
 	uint64_t ret;
 	uint32_t edx, eax;
 
-	asm volatile ("rdmsr" : "=d"(edx),"=a"(eax) : "c"(ecx));
+	asm volatile("rdmsr" : "=d"(edx),"=a"(eax) : "c"(msr));
 
 	ret = edx;
 	ret <<= 32;
 	ret |= eax;
 
 	return ret;
+}
+
+static inline void
+wrmsr(uint32_t msr, uint64_t val)
+{
+	uint32_t edx, eax;
+	edx = val >> 32;
+	eax = val & 0xffffffff;
+
+	asm volatile("wrmsr" : : "c"(msr), "d"(edx), "a"(eax));
 }
 
 #endif

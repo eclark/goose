@@ -12,6 +12,8 @@
 
 #include "fs/tar.h"
 
+#include "system/mmu.h"
+
 #define PTYP(x) kprintf("sizeof(" #x ") = %z\n", sizeof(x))
 
 static int kbd(regs_t *regs);
@@ -25,7 +27,6 @@ main(uint32_t magic, uint32_t addr)
 {
 	int i;
 	/* Temporary place for the memory map of the initial process */
-	static frame_t *mmap;
 
 	vc_clear();
 	kconsole = &uartdev;
@@ -36,61 +37,24 @@ main(uint32_t magic, uint32_t addr)
 		return;
 	}
 
-	/* QEMU's hardware data structures are around 0x07f00000 */
-	map_page(0x07e00000, LARGE_PAGE);
-	/* APIC and other hardware are above 0xfe000000 */
-	for (i = 0; i < 16; i++) {
-		map_page(0xfe000000 + 0x200000 * i, LARGE_PAGE);
-	}
-	flush_tlb();
+	/* Some parts of the initialization depend on dynamic memory allocation
+	 * in the kernel. Begin with the region just after the ramdisk */
+	kbfree(VIRTUAL(initrd_phys + initrd_len), 0x400000 - initrd_phys - initrd_len);
+
+	/* Indicate to the frame allocator that 16MB to 48MB is usable */
+	region_free(0x01000000, 32*1024*1024);
+
+	/* QEMU's acpi tables */
+	mmu_map(0x07ffe000, (uintptr_t)VIRTUAL(0x07ffe000));
+	mmu_map(0x07fff000, (uintptr_t)VIRTUAL(0x07fff000));
+	/* APICs */
+	mmu_map(0xfec00000, (uintptr_t)VIRTUAL(0xfec00000));
+	mmu_map(0xfee00000, (uintptr_t)VIRTUAL(0xfee00000));
+	mmu_flush();
 
 	/* Some parts of the initialization depend on dynamic memory allocation
-	 * in the kernel. Give it the rest of the second 2MB page, but leave
-	 * space for the ramdisk. */
-	/* TODO make this less fragile */
-	kbfree(VIRTUAL(initrd_phys + initrd_len), initrd_phys + initrd_len - 0x400000);
-
-	/* Set up the page frame allocator. TODO Fix this to read the multiboot
-	 * tables. */
-	{
-		uintptr_t p = 0;
-		frame_t *curr;
-
-		curr = kmalloc(sizeof(frame_t));
-		curr->phys = 0;
-		curr->refcnt = 1;
-		curr->ps = LARGE_PAGE;
-		framelist_add(&mmap, curr);
-
-		curr = kmalloc(sizeof(frame_t));
-		curr->phys = 2 * 1024 * 1024;
-		curr->refcnt = 1;
-		curr->ps = LARGE_PAGE;
-		framelist_add(&mmap, curr);
-
-		curr = kmalloc(sizeof(frame_t));
-		curr->phys = 126 * 1024 * 1024;
-		curr->refcnt = 1;
-		curr->ps = LARGE_PAGE;
-		framelist_add(&mmap, curr);
-
-		/* Add the rest of the 0-128MB as free pages */
-		for (p = 4*1024*1024; p < 126 * 1024 * 1024; p += page_size(LARGE_PAGE)) {
-			curr = kmalloc(sizeof(frame_t));
-			curr->phys = p;
-			curr->refcnt = 0;
-			curr->ps = LARGE_PAGE;
-			frame_free(curr);
-		}
-
-		for (i = 0; i < 16; i++) {
-			curr = kmalloc(sizeof(frame_t));
-			curr->phys = 0xfe000000 + 0x200000 * i;
-			curr->refcnt = 1;
-			curr->ps = LARGE_PAGE;
-			framelist_add(&mmap, curr);
-		}
-	}
+	 * in the kernel. Begin with the region just after the ramdisk */
+	kbfree(VIRTUAL(initrd_phys + initrd_len), 0x400000 - initrd_phys - initrd_len);
 
 	/* Parse the ACPI tables for information needed by the other drivers */
 	if (acpi_init()) {
@@ -109,9 +73,11 @@ main(uint32_t magic, uint32_t addr)
 
 	kprintf("initrd: %#lx %d\n", initrd_phys, initrd_len);
 
-	tar_demo(VIRTUAL(initrd_phys));
+	tar_demo((uintptr_t)VIRTUAL(initrd_phys));
 
 	kprintf("Kernel End: %#lx\n", &_end);
+
+	klogf(LOG_DEBUG, "IA32_PAT: %#lx\n", rdmsr(IA32_PAT));
 
 	/* Enable an interrpt for testing */
 	bind_vector(IRQBASEVEC + 1, kbd);

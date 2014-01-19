@@ -110,7 +110,7 @@ apic_init(void)
 
 	/* This should match the value found in the ACPI table.
 	 * What if it doesn't? I dont know... */
-	uint64_t ia32_apic_base = rdmsr(0x1B);
+	uint64_t ia32_apic_base = rdmsr(IA32_APIC_BASE);
 	kprintf("IA32_APIC_BASE %#lx\n", ia32_apic_base);
 
 	kprintf("LAPICID %#x LAPICVER %#x\n", read_lapic(0x20), read_lapic(0x30));

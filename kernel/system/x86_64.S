@@ -32,13 +32,19 @@ processor_brand:
 
 .data
 
-.globl kernel_pml4, kernel_pdpt, kernel_pd,
-.globl phys_pml4, phys_pdpt, phys_pd
+.globl kernel_pml4, kernel_pdpt, kernel_pd0, kernel_pd1, kernel_pd2, kernel_pd3, kernel_pt0, kernel_pt1, kernel_ptstack
+.globl phys_pml4, phys_pdpt, phys_pd0, phys_pd1, phys_pd2, phys_pd3, phys_pt0, phys_pt1, phys_ptstack
 .globl boot_pml4
 
-phys_pml4 = kernel_pml4 - HIGH_HALF 
-phys_pdpt = kernel_pdpt - HIGH_HALF 
-phys_pd   = kernel_pd   - HIGH_HALF 
+phys_pml4 = kernel_pml4 - HIGH_HALF
+phys_pdpt = kernel_pdpt - HIGH_HALF
+phys_pd0  = kernel_pd0  - HIGH_HALF
+phys_pd1  = kernel_pd1  - HIGH_HALF
+phys_pd2  = kernel_pd2  - HIGH_HALF
+phys_pd3  = kernel_pd3  - HIGH_HALF
+phys_pt0  = kernel_pt0  - HIGH_HALF
+phys_pt1  = kernel_pt1  - HIGH_HALF
+phys_ptstack = kernel_ptstack - HIGH_HALF
 
 boot_pml4:
 	.quad	phys_pml4
@@ -50,6 +56,17 @@ kernel_pml4:
 	.fill 512, 8, 0
 kernel_pdpt:
 	.fill 512, 8, 0
-kernel_pd:
+kernel_pd0:
 	.fill 512, 8, 0
-
+kernel_pd1:
+	.fill 512, 8, 0
+kernel_pd2:
+	.fill 512, 8, 0
+kernel_pd3:
+	.fill 512, 8, 0
+kernel_pt0:
+	.fill 512, 8, 0
+kernel_pt1:
+	.fill 512, 8, 0
+kernel_ptstack:
+	.fill 512, 8, 0

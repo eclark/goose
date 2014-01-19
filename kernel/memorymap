@@ -21,6 +21,11 @@ Virtual Memory Map
 Canonical higher half
 ffff800000000000-ffffffffffffffff
 
+ffffff8000000000 pt
+ffffffffc0000000 pd
+ffffffffffe00000 pdpt
+fffffffffffff000 pml4
+
 ffff8000c0000000 Devices, strong uncachable, 4KB pages
 ffff800080000000 Kernel Heap, 4KB pages
 ffff800040000000 Kernel stacks, 8KB each (as two 4KB pages)

@@ -56,20 +56,46 @@ _entry2:
 	movl	$KERNEL_DS, %eax
 	movw	%ax, %ds
 	movw	%ax, %ss
-	movl	$KERNEL_ESP, %esp
+	movl	$KERNEL_EARLY_ESP, %esp
 
 	# now we have a minimal 32-bit protected mode
 
 	# see if this cpu even support x86-64
 	call	_x86_64_check
 
-	# set up pd, pdpt, pml4 and link them together
-	movl	$0x83, phys_pd						# 0-2MB
-	movl	$(0x83 + 1*(1<<21)), phys_pd + 8	# 2-4MB
+	# map 1MB to 4MB into the virtual zone
+	movl	$256, %ecx
+	movl	%ecx, %edx
+	shll	$12, %edx
+	addl	$0x03, %edx
+loop_pt:
+	movl	%edx, phys_pt0(, %ecx, 8)
 
-	movl	$(phys_pd + 0x03), phys_pdpt
+	addl	$4096, %edx
+	incl	%ecx
+	cmpl	$1024, %ecx
+	jb		loop_pt
+
+	# map VGA text mode buffer
+	movl	$0xb8003, (phys_pt0 + 8 * 0xb8)
+
+	# set up two pts, four pds, pdpt, pml4 and link them together
+	movl	$(phys_pt0 + 0x03), phys_pd0
+	movl	$(phys_pt1 + 0x03), phys_pd0 + 8*1
+	movl	$(phys_pd0 + 0x03), phys_pdpt
+	movl	$(phys_pd1 + 0x03), phys_pdpt + 8*1
+	movl	$(phys_pd2 + 0x03), phys_pdpt + 8*2
+	movl	$(phys_pd3 + 0x03), phys_pdpt + 8*3
 	movl	$(phys_pdpt + 0x03), phys_pml4
 	movl	$(phys_pdpt + 0x03), (phys_pml4 + 0x800)
+
+	# set up a page for the kernel stack 
+	movl	$(phys_ptstack + 0x03), phys_pd1
+	movl	$(KERNEL_EARLY_ESP - 0x2000 + 0x03), phys_ptstack
+	movl	$(KERNEL_EARLY_ESP - 0x1000 + 0x03), phys_ptstack + 8*1
+
+	# set up recursive page structures
+	movl	$(phys_pml4 + 0x03), phys_pml4 + 8*511
 
 	# set pml4
 	movl	$phys_pml4, %eax
@@ -81,14 +107,14 @@ _entry2:
 	movl	%eax, %cr4
 
 	# enable long mode
-	movl	$0xc0000080, %ecx
+	movl	$IA32_EFER, %ecx
 	rdmsr
 	orl 	$(1 << 8), %eax
 	wrmsr
 
 	# enable paging
 	movl	%cr0, %eax
-	orl 	$(1<<31), %eax
+	orl 	$(1 << 31), %eax
 	movl	%eax, %cr0
 
 	lgdt	gdtr64l
