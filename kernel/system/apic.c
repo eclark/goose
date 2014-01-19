@@ -6,6 +6,8 @@
 #include <ioport.h>
 #include <mem.h>
 
+#include "mmu.h"
+
 #define I8259_MASTER_DATA 0x21
 #define I8259_SLAVE_DATA 0xa1
 #define I8259_DISABLE 0xff
@@ -66,7 +68,7 @@ apic_init(void)
 		kprintf("Disabled 8259 PICs\n");
 	}
 
-	lapic_base = VIRTUAL(madt->madt.local_interrupt_controller_address);
+	lapic_base = mmu_mapregion(madt->madt.local_interrupt_controller_address, DEVICE);
 	kprintf("Local APIC Address: %#x %#lx\n",
 		madt->madt.local_interrupt_controller_address,
 		lapic_base);
@@ -89,7 +91,10 @@ apic_init(void)
 					ics->io_apic.global_system_interrupt_base);
 
 				/* Assume only one */
-				ioapic_base = VIRTUAL(ics->io_apic.io_apic_address);
+				ioapic_base = mmu_mapregion(ics->io_apic.io_apic_address, DEVICE);
+				kprintf("IO APIC Address: %#x %#lx\n",
+					ics->io_apic.io_apic_address,
+					ioapic_base);
 				break;
 			case ACPI_ICS_INTERRUPT_SOURCE_OVERRIDE:
 				kprintf("INTERRUPT_SOURCE_OVERRIDE(bus: %d, source: %d, "

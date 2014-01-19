@@ -94,6 +94,10 @@ loop_pt:
 	movl	$(KERNEL_EARLY_ESP - 0x2000 + 0x03), phys_ptstack
 	movl	$(KERNEL_EARLY_ESP - 0x1000 + 0x03), phys_ptstack + 8*1
 
+	# set up a page table for the initial heap so frame allocator isnt
+	# called to make it
+	movl	$(phys_ptheap + 0x03), phys_pd2
+
 	# set up recursive page structures
 	movl	$(phys_pml4 + 0x03), phys_pml4 + 8*511
 

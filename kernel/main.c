@@ -37,24 +37,31 @@ main(uint32_t magic, uint32_t addr)
 		return;
 	}
 
-	/* Some parts of the initialization depend on dynamic memory allocation
-	 * in the kernel. Begin with the region just after the ramdisk */
-	kbfree(VIRTUAL(initrd_phys + initrd_len), 0x400000 - initrd_phys - initrd_len);
+	/* Allocator setup */
+	{
+		/* Give a page to kmalloc, so the frame allocator can use it */
+		uintptr_t heapaddr = (uintptr_t)ALIGN(initrd_phys + initrd_len, FRAME_LEN);
+		kbfree(mmu_mapregion(heapaddr, HEAP), FRAME_LEN);
 
-	/* Indicate to the frame allocator that 16MB to 48MB is usable */
-	region_free(0x01000000, 32*1024*1024);
+		/* Free a small amount of space for the frame allocator */
+		heapaddr += FRAME_LEN;
+		region_free(heapaddr, 0x400000 - initrd_phys - initrd_len - FRAME_LEN);
 
-	/* QEMU's acpi tables */
+		/* Make a small heap */
+		frame_t *fr;
+		for (i = 0; i < 512; i++) {
+			fr = frame_alloc();
+			kbfree(mmu_mapregion(fr->phys, HEAP), FRAME_LEN);
+			kfree(fr);
+		}
+
+		/* Indicate to the frame allocator that 16MB to 64MB is usable */
+		region_free(0x01000000, 48*1024*1024);
+	}
+
+	/* map QEMU's acpi tables */
 	mmu_map(0x07ffe000, (uintptr_t)VIRTUAL(0x07ffe000));
 	mmu_map(0x07fff000, (uintptr_t)VIRTUAL(0x07fff000));
-	/* APICs */
-	mmu_map(0xfec00000, (uintptr_t)VIRTUAL(0xfec00000));
-	mmu_map(0xfee00000, (uintptr_t)VIRTUAL(0xfee00000));
-	mmu_flush();
-
-	/* Some parts of the initialization depend on dynamic memory allocation
-	 * in the kernel. Begin with the region just after the ramdisk */
-	kbfree(VIRTUAL(initrd_phys + initrd_len), 0x400000 - initrd_phys - initrd_len);
 
 	/* Parse the ACPI tables for information needed by the other drivers */
 	if (acpi_init()) {
