@@ -15,7 +15,7 @@ entry64:
 	movq	$0, (%rax)
 
 	# flush tlb
-	movq	$phys_pml4, %rax
+	movq	%cr3, %rax
 	movq	%rax, %cr3
 
 	# build IDT that sends everything to one C function

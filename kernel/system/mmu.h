@@ -32,11 +32,10 @@ typedef struct {
 			uint64_t pcd : 1;	/* Cache-disable */
 			uint64_t a : 1;		/* Accessed */
 			uint64_t d : 1;		/* Dirty */
-			uint64_t ps : 1; 	/* Page Size or PAT for 4kb pages */
+			uint64_t pat : 1; 	/* PAT for 4kb pages */
 			uint64_t g : 1;		/* Global */
 			uint64_t ign0 : 3;
-			uint64_t pat : 1;	/* See section 4.9.2 */
-			uint64_t rsvd : 50;
+			uint64_t rsvd : 51;
 			uint64_t xd : 1;	/* Execute Disable */
 		} __attribute__((packed));
 	};
