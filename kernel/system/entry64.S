@@ -11,7 +11,7 @@
 
 entry64:
 	# unmap low half
-	movabs	$kernel_pml4, %rax
+	movabs	$CURRENT_PML4, %rax
 	movq	$0, (%rax)
 
 	# flush tlb

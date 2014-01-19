@@ -20,6 +20,7 @@ static int kbd(regs_t *regs);
 
 static handler_t intvec[256];
 
+/* From the linker script */
 extern uint8_t *_end;
 
 void

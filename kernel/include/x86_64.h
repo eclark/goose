@@ -1,6 +1,7 @@
 #ifndef _X86_64_H
 #define _X86_64_H
 
+#define CURRENT_PML4 0xfffffffffffff000
 #define HIGH_HALF 0xffff800000000000
 
 #define KERNEL_CS 0x08
@@ -53,8 +54,6 @@ typedef struct {
 	uint64_t rsp;
 	uint64_t ss;
 } __attribute__((packed)) regs_t;
-
-extern uint64_t boot_pml4;
 
 void processor_brand(char buf[49]);
 
