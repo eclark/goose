@@ -1,6 +1,7 @@
 
-#include <kmalloc.h>
+#include <mem.h>
 #include <log.h>
+#include "mmu.h"
 
 /*
  * Simple memory allocator based on K&R section 8.7. It should be replaced
@@ -20,6 +21,7 @@ pool_init(pool_t *pool, header_t *(*morecore)(size_t))
 	pool->morecore = morecore;
 }
 
+/* Don't call any allocator functions in an interrupt handler */
 void *
 kpmalloc(pool_t *pool, size_t nbytes)
 {
@@ -101,11 +103,34 @@ kpbfree(pool_t *pool, void *p, size_t n)
 static header_t *
 kmalloc_morecore(size_t nu)
 {
-	kprintf("shit.\n");
+	uintptr_t fp;
+	void *mem;
+	size_t i, npages;
 
-	while (1);
+	klogf(LOG_INFO, "kmalloc_morecore, %d bytes.\n", nu * sizeof(header_t));
 
-	return (header_t*)0;
+	//nunits = (nbytes + sizeof(header_t) - 1) / sizeof(header_t) + 1;
+	npages = (nu * sizeof(header_t) + FRAME_LEN - 1) / FRAME_LEN;
+
+	/* kmalloc doesn't guarantee physically contiguous blocks, so we want
+	 * to ask for one page at a time from the frame allocator so we can
+	 * take up the small regions in the free frame list. */
+	fp = frame_alloc(1);
+	if (fp == 0)
+		return NULL;
+	mem = mmu_mapregion(fp, HEAP);
+	for (i = 1; i < npages && fp != 0; i++) {
+		if ((fp = frame_alloc(1)) == 0)
+			break;
+		mmu_mapregion(fp, HEAP);
+	}
+
+	kbfree(mem, i * FRAME_LEN);
+
+	if (i == npages)
+		return kmalloc_pool.freep;
+	else
+		return NULL;
 }
 
 void

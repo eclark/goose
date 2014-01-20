@@ -28,7 +28,7 @@ mmu_maptype(uintptr_t phys, uintptr_t virt, mem_type_t typ)
 	mmu_entries(virt, &pml4e, &pdpte, &pde, &pte);
 
 	if (!pml4e->p) {
-		tbl = frame_alloc();
+		tbl = frame_alloc(1);
 		if (tbl == 0)
 			return NULL;
 
@@ -40,7 +40,7 @@ mmu_maptype(uintptr_t phys, uintptr_t virt, mem_type_t typ)
 	}
 
 	if (!pdpte->p) {
-		tbl = frame_alloc();
+		tbl = frame_alloc(1);
 		if (tbl == 0)
 			return NULL;
 
@@ -52,7 +52,7 @@ mmu_maptype(uintptr_t phys, uintptr_t virt, mem_type_t typ)
 	}
 
 	if (!pde->p) {
-		tbl = frame_alloc();
+		tbl = frame_alloc(1);
 		if (tbl == 0)
 			return NULL;
 

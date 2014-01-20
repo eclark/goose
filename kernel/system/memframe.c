@@ -1,101 +1,82 @@
 
 #include <mem.h>
 #include <x86_64.h>
-#include <interrupt.h>
 
 /*
  * Page frame allocator.
  *
- * Simple implementation.
+ * Similar to K&R malloc but fixed sizes.
  *
  */
 
 typedef struct region {
-	struct region *next, *prev;
+	struct region *next;
 	uintptr_t phys;
-	size_t len;
+	size_t nframes;
 } region_t;
 
-static region_t *free;
-
-void
-region_free(uintptr_t phys, size_t len)
-{
-	uint64_t flags;
-	region_t *r;
-   
-	cli_ifsave(&flags);
-
-	r = kmalloc(sizeof(region_t));
-	r->phys = phys;
-	r->len = len;
-
-	if (free == NULL) {
-		r->next = r->prev = NULL;
-		free = r;
-	} else if (r->phys < free->phys) {
-		r->prev = NULL;
-		r->next = free;
-		free->prev = r;
-		free = r;
-	} else {
-		region_t *c = free;
-
-		while (c->next != NULL && c->next->phys < r->phys)
-			c = c->next;
-
-		r->prev = c;
-		r->next = c->next;
-		c->next = r;
-	}
-
-	ifrestore(flags);
-}
+static region_t sentinel = { &sentinel, 0, 0 };
+static region_t *freep = &sentinel;
 
 uintptr_t
-frame_alloc(void)
+frame_alloc(size_t nframes)
 {
-	uint64_t flags;
-	uintptr_t phys = 0;
-	region_t *c;
+	uintptr_t phys;
+	region_t *p, *prevp;
 
-	cli_ifsave(&flags);
+	if (nframes == 0)
+		return 0;
 
-	c = free;
-	while (c != NULL) {
-		if (c->len >= FRAME_LEN) {
-			phys = c->phys;
-			c->len -= FRAME_LEN;
-			c->phys += FRAME_LEN;
-
-			if (c->len == 0) {
-				if (c == free)
-					free = c->next;
-
-				if (c->next != NULL)
-					c->next->prev = c->prev;
-				if (c->prev != NULL)
-					c->prev->next = c->next;
-
-				kfree(c);
+	prevp = freep;
+	for (p = prevp->next; ; prevp = p, p = p->next) {
+		if (p->nframes >= nframes) { /* perfect */
+			if (p->nframes == nframes) {
+				prevp->next = p->next;
+				phys = p->phys;
+				kfree(p);
+			} else { /* Take part of a larger region */
+				p->nframes -= nframes;
+				phys = p->phys;
+				p->phys += nframes * FRAME_LEN;
 			}
-			break;
-		} else {
-			c = c->next;
+			freep = prevp;
+			return phys;
 		}
+
+		if (p == freep)
+			return 0;
 	}
 
-	ifrestore(flags);
-	return phys;
+	return 0;
 }
 
 void
-frame_free(uintptr_t phys)
+frame_free(uintptr_t phys, size_t nframes)
 {
-	uint64_t flags;
-	cli_ifsave(&flags);
+	region_t *bp, *p;
 
-	region_free(phys, FRAME_LEN);
+	for (p = freep; !(phys > p->phys && phys < p->next->phys); p = p->next)
+		if (p->phys >= p->next->phys && (phys > p->phys || phys < p->next->phys))
+			break;
 
-	ifrestore(flags);
+	if (phys + nframes * FRAME_LEN == p->next->phys) {
+		/* Expand upper region */
+
+		p->next->phys -= nframes * FRAME_LEN;
+		p->next->nframes += nframes;
+	} else if (p->phys + p->nframes * FRAME_LEN == phys) {
+		/* Expand lower region */
+
+		p->nframes += nframes;
+	} else {
+		/* Insert a new region */
+		bp = kmalloc(sizeof(region_t));
+		bp->phys = phys;
+		bp->nframes = nframes;
+
+		bp->next = p->next;
+		p->next = bp;
+	}
+
+	freep = p;
 }
