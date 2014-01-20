@@ -1,3 +1,5 @@
+Notes on the x86-64 memory map as it is used in QEMU and this kernel.
+
 Physical Memory Map
 
 Above 4GB - Not presumed to exist.

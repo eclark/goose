@@ -1,3 +1,6 @@
+/* Copyright (c) 2014 Eric Clark
+ * See the file LICENSE for copying permission.
+ */
 #ifndef _VC_H
 #define _VC_H
 

@@ -1,3 +1,7 @@
+/* Copyright (c) 2014 Eric Clark
+ * See the file LICENSE for copying permission.
+ */
+
 /*
  * Based on the example at:
  * http://wiki.osdev.org/Creating_a_64-bit_kernel

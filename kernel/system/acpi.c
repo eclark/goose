@@ -1,3 +1,6 @@
+/* Copyright (c) 2014 Eric Clark
+ * See the file LICENSE for copying permission.
+ */
 
 #include <acpi.h>
 #include <system.h>

@@ -1,3 +1,6 @@
+/* Copyright (c) 2014 Eric Clark
+ * See the file LICENSE for copying permission.
+ */
 #ifndef _MEM_H
 #define _MEM_H
 

@@ -1,4 +1,5 @@
-# Makefile based on 391 but modified for 64 bit higher-half.
+# Copyright (c) 2014 Eric Clark
+# See the file LICENSE for copying permission.
 
 CFLAGS += -DDEBUG -std=gnu99 -Wall -m64 -mcmodel=large -ffreestanding -nostdlib -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow
 CPPFLAGS += -Iinclude

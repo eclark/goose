@@ -1,3 +1,6 @@
+# Copyright (c) 2014 Eric Clark
+# See the file LICENSE for copying permission.
+
 # Entry point when coming from GRUB2
 
 #define ASM_FILE 1

@@ -1,3 +1,5 @@
+# Copyright (c) 2014 Eric Clark
+# See the file LICENSE for copying permission.
 
 #define ASM_FILE 1
 
