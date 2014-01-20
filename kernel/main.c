@@ -10,14 +10,12 @@
 #include <interrupt.h>
 #include <ioport.h>
 
+#include "system/mmu.h"
+
 #include "device/vc.h"
 #include "device/uart.h"
 
 #include "fs/tar.h"
-
-#include "system/mmu.h"
-
-#define PTYP(x) kprintf("sizeof(" #x ") = %z\n", sizeof(x))
 
 static int kbd(regs_t *regs);
 
@@ -29,8 +27,6 @@ extern uint8_t *_end;
 void
 main(uint32_t magic, uint32_t addr)
 {
-	/* Temporary place for the memory map of the initial process */
-
 	vc_clear();
 	kconsole = &uartdev;
 	/* kconsole = &vcdev; */
@@ -56,11 +52,11 @@ main(uint32_t magic, uint32_t addr)
 		frame_free(0x01000000, 48*1024*1024 >> 12);
 	}
 
-	/* map QEMU's acpi tables */
+	/* Map QEMU's acpi tables */
 	mmu_map(0x07ffe000, (uintptr_t)VIRTUAL(0x07ffe000));
 	mmu_map(0x07fff000, (uintptr_t)VIRTUAL(0x07fff000));
 
-	/* Parse the ACPI tables for information needed by the other drivers */
+	/* Parse the ACPI tables for information needed by APIC and HPET */
 	if (acpi_init()) {
 		klogf(LOG_EMERG, "acpi_init failed.\n");
 		return;
@@ -72,6 +68,7 @@ main(uint32_t magic, uint32_t addr)
 		return;
 	}
 
+	/* Initialize the UART after the APIC so it can unmask the interrupt */
 	uart_init();
 	kconsole = &uartdev;
 
