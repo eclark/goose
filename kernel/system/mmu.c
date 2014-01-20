@@ -21,42 +21,45 @@ void *
 mmu_maptype(uintptr_t phys, uintptr_t virt, mem_type_t typ)
 {
 	mmu_t *pml4e, *pdpte, *pde, *pte;
-	frame_t *f;
+	uintptr_t tbl;
 
 	assert((phys & 0xffff000000000fff) == 0);
 
 	mmu_entries(virt, &pml4e, &pdpte, &pde, &pte);
 
 	if (!pml4e->p) {
-		f = frame_alloc();
+		tbl = frame_alloc();
+		if (tbl == 0)
+			return NULL;
 
-		pml4e->v = f->phys;
+		pml4e->v = tbl;
 		pml4e->rw = 1;
 		pml4e->p = 1;
 
-		kfree(f);
 		mmu_flush();
 	}
 
 	if (!pdpte->p) {
-		f = frame_alloc();
+		tbl = frame_alloc();
+		if (tbl == 0)
+			return NULL;
 
-		pdpte->v = f->phys;
+		pdpte->v = tbl;
 		pdpte->rw = 1;
 		pdpte->p = 1;
 
-		kfree(f);
 		mmu_flush();
 	}
 
 	if (!pde->p) {
-		f = frame_alloc();
+		tbl = frame_alloc();
+		if (tbl == 0)
+			return NULL;
 
-		pde->v = f->phys;
+		pde->v = tbl;
 		pde->rw = 1;
 		pde->p = 1;
 
-		kfree(f);
 		mmu_flush();
 	}
 

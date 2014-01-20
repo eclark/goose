@@ -51,11 +51,10 @@ main(uint32_t magic, uint32_t addr)
 		region_free(heapaddr, 0x400000 - initrd_phys - initrd_len - FRAME_LEN);
 
 		/* Make a small heap */
-		frame_t *fr;
+		uintptr_t phys;
 		for (i = 0; i < 512; i++) {
-			fr = frame_alloc();
-			kbfree(mmu_mapregion(fr->phys, HEAP), FRAME_LEN);
-			kfree(fr);
+			phys = frame_alloc();
+			kbfree(mmu_mapregion(phys, HEAP), FRAME_LEN);
 		}
 
 		/* Indicate to the frame allocator that 16MB to 64MB is usable */

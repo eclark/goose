@@ -17,7 +17,6 @@ typedef struct region {
 } region_t;
 
 static region_t *free;
-static frame_t *used;
 
 void
 region_free(uintptr_t phys, size_t len)
@@ -53,22 +52,19 @@ region_free(uintptr_t phys, size_t len)
 	ifrestore(flags);
 }
 
-frame_t *
+uintptr_t
 frame_alloc(void)
 {
 	uint64_t flags;
-	frame_t *frame;
+	uintptr_t phys = 0;
 	region_t *c;
 
 	cli_ifsave(&flags);
 
 	c = free;
-	frame = NULL;
-
 	while (c != NULL) {
 		if (c->len >= FRAME_LEN) {
-			frame = kmalloc(sizeof(frame_t));
-			frame->phys = c->phys;
+			phys = c->phys;
 			c->len -= FRAME_LEN;
 			c->phys += FRAME_LEN;
 
@@ -90,59 +86,16 @@ frame_alloc(void)
 	}
 
 	ifrestore(flags);
-	return frame;
-}
-
-frame_t *
-frame_reserve(uintptr_t phys_addr)
-{
-	return 0;
+	return phys;
 }
 
 void
-frame_free(frame_t *f)
+frame_free(uintptr_t phys)
 {
 	uint64_t flags;
 	cli_ifsave(&flags);
 
-	region_free(f->phys, FRAME_LEN);
-	kfree(f);
+	region_free(phys, FRAME_LEN);
 
 	ifrestore(flags);
 }
-
-void
-framelist_add(frame_t **head, frame_t *f)
-{
-	f->next = f->prev = NULL;
-
-	if (*head != NULL) {
-		f->prev = NULL;
-		f->next = *head;
-		(*head)->prev = f;
-	}
-	*head = f;
-}
-
-frame_t *
-framelist_remove(frame_t **head, frame_t *f)
-{
-	if (head == NULL)
-		return NULL;
-
-	if (f != NULL) {
-		if (f->prev != NULL)
-			f->prev->next = f->next;
-
-		if (f->next != NULL)
-			f->next->prev = f->prev;
-
-		if (*head == f)
-			*head = f->next;
-
-		f->prev = f->next = NULL;
-	}
-
-	return f;
-}
-
