@@ -40,6 +40,8 @@ main(uint32_t magic, uint32_t addr)
 
 	/* Allocator setup */
 	{
+		kmalloc_init();
+
 		/* Give a page to kmalloc, so the frame allocator can use it */
 		uintptr_t heapaddr = (uintptr_t)ALIGN(initrd_phys + initrd_len, FRAME_LEN);
 		kbfree(mmu_mapregion(heapaddr, HEAP), FRAME_LEN);
