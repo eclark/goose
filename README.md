@@ -14,9 +14,10 @@ Why?
 ====
 
 After building a simple x86 operating system in the Computer Systems
-Engineering course at UIUC, I want to understand how to implement support
+Engineering course at UIUC, I wanted to understand how to implement support
 for modern features of x86 systems, such as ACPI, APIC, HPET, and Long
-Mode.
+Mode. No code in this project was taken from our team project that was
+written for the class.
 
 License
 =======
